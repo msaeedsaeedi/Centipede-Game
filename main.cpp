@@ -14,7 +14,7 @@ const int boxPixelsX = 32;                        // Pixels Per Box X
 const int boxPixelsY = 32;                        // Pixels Per Box Y
 const int gameRows = resolutionY / boxPixelsY;    // Total Rows
 const int gameColumns = resolutionX / boxPixelsX; // Total Columns
-const int MAX_BULLETS = 50;                       // Max Number of Bullets
+const int MAX_LASERS = 50;                        // Max Number of Bullets
 
 /*
     ** Readability **
@@ -43,9 +43,9 @@ const int LEFT = 3;  // Move Left
 void RenderPlayer(RenderWindow &window, float player[], Sprite &playersprite); // Render Player
 void MovePlayer(float player[], int direction);                                // Control Player Movement
 
-void SpawnBullet(float bullet[][3], const float player[]);                     // Spawn a single bullet
-void RenderBullet(RenderWindow &window, float bullet[], Sprite &bulletSprite); // Render Bullet
-void MoveBullet(float bullet[]);                                               // Control Bullet Movement
+void SpawnLaser(float Lasers[][3], const float player[], Sprite LaserSprites[]);  // Spawn a single bullet
+void RenderLasers(RenderWindow &window, float Lasers[][3], Sprite LaserSprite[]); // Render Bullet
+void MoveLasers(float Laser[][3]);                                                // Control Bullet Movement
 
 void HandlePlayer(float player[3]); // Handle KeyBoard Inputs
 
@@ -77,16 +77,20 @@ int main()
     /*
         Setup Data
             - Player
+            - Lasers
     */
     float Player[3]{};
     Player[x] = (gameColumns / 2) * boxPixelsX;
     Player[y] = (gameRows - 5) * boxPixelsY;
 
+    float Lasers[MAX_LASERS][3]{};
+    Sprite LaserSprites[MAX_LASERS]{};
+
     /*
         Clocks
     */
     Clock PlayerMovementClock;
-
+    Clock LaserClock;
     /*
         Game Main Loops
     */
@@ -109,18 +113,34 @@ int main()
 
         /*
             Handle Keyboard
+                - Player Movement
+                - Laser Shots
         */
         if (PlayerMovementClock.getElapsedTime().asMilliseconds() > 100)
         {
             HandlePlayer(Player);
             PlayerMovementClock.restart();
         }
+        if (LaserClock.getElapsedTime().asMilliseconds() > 200)
+        {
+            if (Keyboard::isKeyPressed(Keyboard::Z))
+            {
+                SpawnLaser(Lasers, Player, LaserSprites);
+                LaserClock.restart();
+            }
+        }
+
+        /*
+            Real-Time Animations
+        */
+        MoveLasers(Lasers);
 
         /*
             -> Render Objects
         */
         window.draw(BackgroundSprite);
         RenderPlayer(window, Player, PlayerSprite);
+        RenderLasers(window, Lasers, LaserSprites);
 
         /*
              Refresh Frame
@@ -168,4 +188,42 @@ void RenderPlayer(RenderWindow &window, float player[], Sprite &playersprite)
 {
     playersprite.setPosition(player[x], player[y]);
     window.draw(playersprite);
+}
+void SpawnLaser(float Lasers[][3], const float player[], Sprite LaserSprites[])
+{
+    static Texture LaserTexture;
+    LaserTexture.loadFromFile("Textures/bullet.png");
+    LaserTexture.setSmooth(true);
+
+    for (int i = 0; i < MAX_LASERS; i++)
+    {
+        if (Lasers[i][exists] == false)
+        {
+            Lasers[i][x] = player[x];
+            Lasers[i][y] = player[y];
+            Lasers[i][exists] = true;
+            LaserSprites[i].setTexture(LaserTexture);
+            break;
+        }
+    }
+}
+void RenderLasers(RenderWindow &window, float Lasers[][3], Sprite LaserSprite[])
+{
+    for (int i = 0; i < MAX_LASERS; i++)
+    {
+        if (Lasers[i][exists] == true)
+        {
+            LaserSprite[i].setPosition(Lasers[i][x], Lasers[i][y]);
+            window.draw(LaserSprite[i]);
+        }
+    }
+}
+void MoveLasers(float Laser[][3])
+{
+    for (int i = 0; i < MAX_LASERS; i++)
+    {
+        Laser[i][y] -= 1;
+        if (Laser[i][y] < -32)
+            Laser[i][exists] = false;
+    }
 }
