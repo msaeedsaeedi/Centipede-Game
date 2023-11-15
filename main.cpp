@@ -33,6 +33,11 @@ const int RIGHT = 2; // Move Right
 const int LEFT = 3;  // Move Left
 
 /*
+    Global Variables
+*/
+float delta = 0;
+
+/*
     Function Declerations
         - Player
         - Bullet
@@ -57,7 +62,7 @@ int main()
     RenderWindow window(VideoMode(resolutionX, resolutionY), "Centipede", Style::Close | Style::Titlebar);
     window.setSize(Vector2u(640, 640));
     window.setPosition(Vector2i(400, 0));
-
+    
     /*
         Setup Objects For Rendering
             - Background
@@ -91,11 +96,18 @@ int main()
     */
     Clock PlayerMovementClock;
     Clock LaserClock;
+    Clock DeltaClock;
     /*
         Game Main Loops
     */
     while (window.isOpen())
     {
+        /*
+            Calculating Delta Seconds for Speed
+        */
+        Time elapsed = DeltaClock.restart();
+        delta = elapsed.asSeconds();
+
         /*
             -> Handling Events
         */
@@ -222,7 +234,7 @@ void MoveLasers(float Laser[][3])
 {
     for (int i = 0; i < MAX_LASERS; i++)
     {
-        Laser[i][y] -= 1;
+        Laser[i][y] -= 750 * delta;
         if (Laser[i][y] < -32)
             Laser[i][exists] = false;
     }
