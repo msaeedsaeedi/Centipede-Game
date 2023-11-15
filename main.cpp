@@ -69,6 +69,19 @@ int main()
     BackgroundSprite.setTexture(BackgroundTexture);
     BackgroundSprite.setColor(Color(255, 255, 255, 255 * 0.25));
 
+    Texture PlayerTexture;
+    Sprite PlayerSprite;
+    PlayerTexture.loadFromFile("Textures/player.png");
+    PlayerSprite.setTexture(PlayerTexture);
+
+    /*
+        Setup Data
+            - Player
+    */
+    float Player[3]{};
+    Player[x] = (gameColumns / 2) * boxPixelsX;
+    Player[y] = (gameRows - 5) * boxPixelsY;
+
     /*
         Game Main Loops
     */
@@ -87,12 +100,18 @@ int main()
             {
                 window.close();
             }
+
+            /*
+                Handle Keyboard
+            */
+            HandlePlayer(Player);
         }
 
         /*
             -> Render Objects
         */
         window.draw(BackgroundSprite);
+        RenderPlayer(window, Player, PlayerSprite);
 
         /*
              Refresh Frame
@@ -102,4 +121,42 @@ int main()
     }
 
     return 0;
+}
+void HandlePlayer(float player[3])
+{
+    if (Keyboard::isKeyPressed(Keyboard::Up))
+        MovePlayer(player, UP);
+    if (Keyboard::isKeyPressed(Keyboard::Down))
+        MovePlayer(player, DOWN);
+    if (Keyboard::isKeyPressed(Keyboard::Left))
+        MovePlayer(player, LEFT);
+    if (Keyboard::isKeyPressed(Keyboard::Right))
+        MovePlayer(player, RIGHT);
+}
+void MovePlayer(float player[], int direction)
+{
+    switch (direction)
+    {
+    case UP:
+        if (player[y] >= (gameRows - 4) * boxPixelsY)
+            player[y] -= boxPixelsY;
+        break;
+    case DOWN:
+        if (player[y] <= (gameRows - 2) * boxPixelsY)
+            player[y] += boxPixelsY;
+        break;
+    case LEFT:
+        if (player[x] >= boxPixelsX)
+            player[x] -= boxPixelsX;
+        break;
+    case RIGHT:
+        if (player[x] <= (gameColumns - 2) * boxPixelsX)
+            player[x] += boxPixelsX;
+        break;
+    }
+}
+void RenderPlayer(RenderWindow &window, float player[], Sprite &playersprite)
+{
+    playersprite.setPosition(player[x], player[y]);
+    window.draw(playersprite);
 }
