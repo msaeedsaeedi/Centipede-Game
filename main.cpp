@@ -83,6 +83,11 @@ int main()
     Player[y] = (gameRows - 5) * boxPixelsY;
 
     /*
+        Clocks
+    */
+    Clock PlayerMovementClock;
+
+    /*
         Game Main Loops
     */
     while (window.isOpen())
@@ -100,11 +105,15 @@ int main()
             {
                 window.close();
             }
+        }
 
-            /*
-                Handle Keyboard
-            */
+        /*
+            Handle Keyboard
+        */
+        if (PlayerMovementClock.getElapsedTime().asMilliseconds() > 100)
+        {
             HandlePlayer(Player);
+            PlayerMovementClock.restart();
         }
 
         /*
