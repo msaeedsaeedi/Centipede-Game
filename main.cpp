@@ -1,4 +1,5 @@
 #include <iostream>
+#include <math.h>
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
 
@@ -14,16 +15,23 @@ const int boxPixelsX = 32;                        // Pixels Per Box X
 const int boxPixelsY = 32;                        // Pixels Per Box Y
 const int gameRows = resolutionY / boxPixelsY;    // Total Rows
 const int gameColumns = resolutionX / boxPixelsX; // Total Columns
-const int MAX_LASERS = 50;                        // Max Number of Bullets
 
+const int MAX_LASERS = 50;    // Max Number of Bullets
+const int MAX_MASHROOMS = 30; // Max Number of Mushrooms
 /*
     ** Readability **
         - General
+        - Objects
         - Bullet
         - Player Movement
 */
 const int x = 0; // x-coordinate
 const int y = 1; // y-coordinate
+
+const int ONone = 0;     // Nothing Object
+const int OPlayer = 1;   // Player Object
+const int OMushroom = 2; // Mushroom Object
+const int OLaser = 3;    // Mushroom Object
 
 const int exists = 2; // Specifically for [Bullet]
 
@@ -36,23 +44,32 @@ const int LEFT = 3;  // Move Left
     Global Variables
 */
 float delta = 0;
+int gameGrid[gameRows][gameColumns] = {};
 
 /*
     Function Declerations
         - Player
         - Bullet
+        - Mushrooms
         - Input Handling
+        - Collision
         - Miscellaneous
 */
 
-void RenderPlayer(RenderWindow &window, float player[], Sprite &playersprite); // Render Player
-void MovePlayer(float player[], int direction);                                // Control Player Movement
+void RenderPlayer(RenderWindow &window, int player[], Sprite &playersprite); // Render Player
+void MovePlayer(int player[], int direction);                                // Control Player Movement
 
-void SpawnLaser(float Lasers[][3], const float player[], Sprite LaserSprites[]);  // Spawn a single bullet
+void SpawnLaser(float Lasers[][3], const int player[], Sprite LaserSprites[]);    // Spawn a single bullet
 void RenderLasers(RenderWindow &window, float Lasers[][3], Sprite LaserSprite[]); // Render Bullet
 void MoveLasers(float Laser[][3]);                                                // Control Bullet Movement
 
-void HandlePlayer(float player[3]); // Handle KeyBoard Inputs
+void GenerateMushrooms(Sprite MushroomSprites[], int Mushrooms[gameRows][gameColumns]);
+void RenderMushrooms(RenderWindow &Window, Sprite MushroomSprites[], int Mushrooms[gameRows][gameColumns]);
+
+void HandlePlayer(int player[2]); // Handle KeyBoard Inputs
+
+bool CheckCollision(int Object[], int Direction, int &collided_object);
+bool CheckCollision(int Object[], int Direction);
 
 int main()
 {
@@ -62,7 +79,7 @@ int main()
     RenderWindow window(VideoMode(resolutionX, resolutionY), "Centipede", Style::Close | Style::Titlebar);
     window.setSize(Vector2u(640, 640));
     window.setPosition(Vector2i(400, 0));
-    
+
     /*
         Setup Objects For Rendering
             - Background
@@ -83,13 +100,23 @@ int main()
         Setup Data
             - Player
             - Lasers
+            - Mushrooms
     */
-    float Player[3]{};
-    Player[x] = (gameColumns / 2) * boxPixelsX;
-    Player[y] = (gameRows - 5) * boxPixelsY;
+    int Player[2]{};
+    Player[x] = (gameColumns / 2);
+    Player[y] = (gameRows - 5);
+    gameGrid[Player[y]][Player[x]] = 1;
 
     float Lasers[MAX_LASERS][3]{};
     Sprite LaserSprites[MAX_LASERS]{};
+
+    int Mushrooms[gameRows][gameColumns]{};
+    Sprite MushroomSprites[MAX_MASHROOMS]{};
+
+    /*
+        Initialization
+    */
+    GenerateMushrooms(MushroomSprites, Mushrooms);
 
     /*
         Clocks
@@ -97,6 +124,7 @@ int main()
     Clock PlayerMovementClock;
     Clock LaserClock;
     Clock DeltaClock;
+
     /*
         Game Main Loops
     */
@@ -153,7 +181,7 @@ int main()
         window.draw(BackgroundSprite);
         RenderPlayer(window, Player, PlayerSprite);
         RenderLasers(window, Lasers, LaserSprites);
-
+        RenderMushrooms(window, MushroomSprites, Mushrooms);
         /*
              Refresh Frame
         */
@@ -163,7 +191,7 @@ int main()
 
     return 0;
 }
-void HandlePlayer(float player[3])
+void HandlePlayer(int player[2])
 {
     if (Keyboard::isKeyPressed(Keyboard::Up))
         MovePlayer(player, UP);
@@ -174,34 +202,64 @@ void HandlePlayer(float player[3])
     if (Keyboard::isKeyPressed(Keyboard::Right))
         MovePlayer(player, RIGHT);
 }
-void MovePlayer(float player[], int direction)
+void MovePlayer(int player[], int direction)
 {
+    gameGrid[player[y]][player[x]] = 0;
     switch (direction)
     {
     case UP:
-        if (player[y] >= (gameRows - 4) * boxPixelsY)
-            player[y] -= boxPixelsY;
+        if (player[y] >= (gameRows - 4))
+        {
+            if (gameGrid[player[y] - 1][player[x]] != 0)
+            {
+                cout << "Collided" << endl;
+            }
+            else
+                player[y] -= 1;
+        }
         break;
     case DOWN:
-        if (player[y] <= (gameRows - 2) * boxPixelsY)
-            player[y] += boxPixelsY;
+        if (player[y] <= (gameRows - 2))
+        {
+            if (gameGrid[player[y] + 1][player[x]] != 0)
+            {
+                cout << "Collided" << endl;
+            }
+            else
+                player[y] += 1;
+        }
         break;
     case LEFT:
-        if (player[x] >= boxPixelsX)
-            player[x] -= boxPixelsX;
+        if (player[x] >= 1)
+        {
+            if (gameGrid[player[y]][player[x] - 1] != 0)
+            {
+                cout << "Collided" << endl;
+            }
+            else
+                player[x] -= 1;
+        }
         break;
     case RIGHT:
-        if (player[x] <= (gameColumns - 2) * boxPixelsX)
-            player[x] += boxPixelsX;
+        if (player[x] <= (gameColumns - 2))
+        {
+            if (gameGrid[player[y]][player[x] + 1] != 0)
+            {
+                cout << "Collided" << endl;
+            }
+            else
+                player[x] += 1;
+        }
         break;
     }
+    gameGrid[player[y]][player[x]] = 1;
 }
-void RenderPlayer(RenderWindow &window, float player[], Sprite &playersprite)
+void RenderPlayer(RenderWindow &window, int player[], Sprite &playersprite)
 {
-    playersprite.setPosition(player[x], player[y]);
+    playersprite.setPosition(player[x] * boxPixelsX, player[y] * boxPixelsY);
     window.draw(playersprite);
 }
-void SpawnLaser(float Lasers[][3], const float player[], Sprite LaserSprites[])
+void SpawnLaser(float Lasers[][3], const int player[], Sprite LaserSprites[])
 {
     static Texture LaserTexture;
     LaserTexture.loadFromFile("Textures/bullet.png");
@@ -225,7 +283,7 @@ void RenderLasers(RenderWindow &window, float Lasers[][3], Sprite LaserSprite[])
     {
         if (Lasers[i][exists] == true)
         {
-            LaserSprite[i].setPosition(Lasers[i][x], Lasers[i][y]);
+            LaserSprite[i].setPosition(Lasers[i][x] * boxPixelsX, Lasers[i][y] * boxPixelsY);
             window.draw(LaserSprite[i]);
         }
     }
@@ -234,8 +292,123 @@ void MoveLasers(float Laser[][3])
 {
     for (int i = 0; i < MAX_LASERS; i++)
     {
-        Laser[i][y] -= 750 * delta;
-        if (Laser[i][y] < -32)
-            Laser[i][exists] = false;
+        if (Laser[i][exists] == true)
+        {
+            int Position[] = {int(Laser[i][x]), int(floor(Laser[i][y]))};
+            gameGrid[int(floor(Laser[i][y]))][int(Laser[i][x])] = ONone;
+
+            Laser[i][y] -= 50 * delta;
+            if (Laser[i][y] < 0)
+            {
+                Laser[i][exists] = false;
+            }
+            else if (Laser[i][y] >= 0)
+            {
+                gameGrid[int(floor(Laser[i][y]))][int(Laser[i][x])] = OLaser;
+                if (CheckCollision(Position, UP))
+                {
+                    cout << "collision Laser" << endl;
+                }
+            }
+        }
     }
+}
+void GenerateMushrooms(Sprite MushroomSprites[], int Mushrooms[gameRows][gameColumns])
+{
+    srand(time(0));
+    int MushroomsCount = (rand() % 11) + 20;
+    float RandomPosition[2]{};
+    static Texture MushroomTexture;
+    MushroomTexture.loadFromFile("Textures/mushroom.png");
+    for (int i = 0; i < MushroomsCount; i++)
+    {
+        if (gameGrid[y][x] == 0)
+        {
+            int Grid_X = rand() % gameColumns;
+            int Grid_Y = rand() % (gameRows - 5);
+
+            RandomPosition[x] = Grid_X * boxPixelsX;
+            RandomPosition[y] = Grid_Y * boxPixelsY;
+
+            gameGrid[Grid_Y][Grid_X] = OMushroom;
+            Mushrooms[Grid_Y][Grid_X] = i;
+
+            MushroomSprites[i].setTexture(MushroomTexture);
+            MushroomSprites[i].setTextureRect(IntRect(0, 0, boxPixelsX, boxPixelsY));
+            MushroomSprites[i].setPosition(RandomPosition[x], RandomPosition[y]);
+        }
+        else
+            i--;
+    }
+}
+void RenderMushrooms(RenderWindow &Window, Sprite MushroomSprites[], int Mushrooms[gameRows][gameColumns])
+{
+    for (int i = 0; i < gameRows; i++)
+    {
+        for (int j = 0; j < gameColumns; j++)
+        {
+            if (gameGrid[i][j] == OMushroom)
+            {
+                Window.draw(MushroomSprites[Mushrooms[i][j]]);
+            }
+        }
+    }
+}
+bool CheckCollision(int Object[], int Direction, int &collided_object)
+{
+    switch (Direction)
+    {
+    case UP:
+        if (gameGrid[Object[y] - 1][Object[x]] != ONone)
+        {
+            collided_object = gameGrid[Object[y] - 1][Object[x]];
+            return true;
+        }
+        break;
+    case DOWN:
+        if (gameGrid[Object[y] + 1][Object[x]] != ONone)
+        {
+            collided_object = gameGrid[Object[y] + 1][Object[x]];
+            return true;
+        }
+        break;
+    case LEFT:
+        if (gameGrid[Object[y]][Object[x] - 1] != ONone)
+        {
+            collided_object = gameGrid[Object[y]][Object[x] - 1];
+            return true;
+        }
+        break;
+    case RIGHT:
+        if (gameGrid[Object[y]][Object[x] + 1] != ONone)
+        {
+            collided_object = gameGrid[Object[y]][Object[x] + 1];
+            return true;
+        }
+        break;
+    }
+    return false;
+}
+bool CheckCollision(int Object[], int Direction)
+{
+    switch (Direction)
+    {
+    case UP:
+        if (gameGrid[Object[y] - 1][Object[x]] != ONone)
+            return true;
+        break;
+    case DOWN:
+        if (gameGrid[Object[y] + 1][Object[x]] != ONone)
+            return true;
+        break;
+    case LEFT:
+        if (gameGrid[Object[y]][Object[x] - 1] != ONone)
+            return true;
+        break;
+    case RIGHT:
+        if (gameGrid[Object[y]][Object[x] + 1] != ONone)
+            return true;
+        break;
+    }
+    return false;
 }
