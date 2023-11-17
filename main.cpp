@@ -63,8 +63,8 @@ void SpawnLaser(float Lasers[][3], const int player[], Sprite LaserSprites[]);  
 void RenderLasers(RenderWindow &window, float Lasers[][3], Sprite LaserSprite[]); // Render Bullet
 void MoveLasers(float Laser[][3]);                                                // Control Bullet Movement
 
-void GenerateMushrooms(Sprite MushroomSprites[], int Mushrooms[gameRows][gameColumns]);
-void RenderMushrooms(RenderWindow &Window, Sprite MushroomSprites[], int Mushrooms[gameRows][gameColumns]);
+void GenerateMushrooms(Sprite MushroomSprites[], int &MushroomsCount);
+void RenderMushrooms(RenderWindow &Window, Sprite MushroomSprites[], int MushroomsCount);
 
 void HandlePlayer(int player[2]); // Handle KeyBoard Inputs
 
@@ -110,13 +110,13 @@ int main()
     float Lasers[MAX_LASERS][3]{};
     Sprite LaserSprites[MAX_LASERS]{};
 
-    int Mushrooms[gameRows][gameColumns]{};
+    int MushroomsCount = 0;
     Sprite MushroomSprites[MAX_MASHROOMS]{};
 
     /*
         Initialization
     */
-    GenerateMushrooms(MushroomSprites, Mushrooms);
+    GenerateMushrooms(MushroomSprites, MushroomsCount);
 
     /*
         Clocks
@@ -175,13 +175,23 @@ int main()
         */
         MoveLasers(Lasers);
 
+        /* system("clear");
+        for (int i = 0; i < gameRows; i++)
+        {
+            for (int j = 0; j < gameColumns; j++)
+            {
+                cout << gameGrid[i][j] << "  ";
+            }
+            cout << endl;
+        } */
+
         /*
             -> Render Objects
         */
         window.draw(BackgroundSprite);
         RenderPlayer(window, Player, PlayerSprite);
         RenderLasers(window, Lasers, LaserSprites);
-        RenderMushrooms(window, MushroomSprites, Mushrooms);
+        RenderMushrooms(window, MushroomSprites, MushroomsCount);
         /*
              Refresh Frame
         */
@@ -294,33 +304,39 @@ void MoveLasers(float Laser[][3])
     {
         if (Laser[i][exists] == true)
         {
-            int Position[] = {int(Laser[i][x]), int(floor(Laser[i][y]))};
-            gameGrid[int(floor(Laser[i][y]))][int(Laser[i][x])] = ONone;
+            int Position[] = {int(Laser[i][x]), int(floor(Laser[i][y]) + 1)};
+            gameGrid[int(floor(Laser[i][y]) + 1)][int(Laser[i][x])] = ONone;
 
             Laser[i][y] -= 50 * delta;
             if (Laser[i][y] < 0)
             {
                 Laser[i][exists] = false;
             }
-            else if (Laser[i][y] >= 0)
+            else if (Laser[i][y] > 0)
             {
-                gameGrid[int(floor(Laser[i][y]))][int(Laser[i][x])] = OLaser;
-                if (CheckCollision(Position, UP))
+                int collided_object = 0;
+                gameGrid[int(floor(Laser[i][y]) + 1)][int(Laser[i][x])] = OLaser;
+                if (CheckCollision(Position, UP, collided_object))
                 {
-                    cout << "collision Laser" << endl;
+                    if (collided_object == OMushroom)
+                    {
+                        cout << Position[x] << " : " << Position[y] << endl;
+                        Laser[i][exists] = false;
+                    }
                 }
             }
         }
     }
 }
-void GenerateMushrooms(Sprite MushroomSprites[], int Mushrooms[gameRows][gameColumns])
+void GenerateMushrooms(Sprite MushroomSprites[], int &MushroomsCount)
 {
     srand(time(0));
-    int MushroomsCount = (rand() % 11) + 20;
+    int R_MushroomsCount = (rand() % 11) + 20;
     float RandomPosition[2]{};
     static Texture MushroomTexture;
     MushroomTexture.loadFromFile("Textures/mushroom.png");
-    for (int i = 0; i < MushroomsCount; i++)
+    MushroomsCount = R_MushroomsCount;
+    for (int i = 0; i < R_MushroomsCount; i++)
     {
         if (gameGrid[y][x] == 0)
         {
@@ -331,7 +347,6 @@ void GenerateMushrooms(Sprite MushroomSprites[], int Mushrooms[gameRows][gameCol
             RandomPosition[y] = Grid_Y * boxPixelsY;
 
             gameGrid[Grid_Y][Grid_X] = OMushroom;
-            Mushrooms[Grid_Y][Grid_X] = i;
 
             MushroomSprites[i].setTexture(MushroomTexture);
             MushroomSprites[i].setTextureRect(IntRect(0, 0, boxPixelsX, boxPixelsY));
@@ -341,17 +356,11 @@ void GenerateMushrooms(Sprite MushroomSprites[], int Mushrooms[gameRows][gameCol
             i--;
     }
 }
-void RenderMushrooms(RenderWindow &Window, Sprite MushroomSprites[], int Mushrooms[gameRows][gameColumns])
+void RenderMushrooms(RenderWindow &Window, Sprite MushroomSprites[], int MushroomsCount)
 {
-    for (int i = 0; i < gameRows; i++)
+    for (int i = 0; i < MushroomsCount; i++)
     {
-        for (int j = 0; j < gameColumns; j++)
-        {
-            if (gameGrid[i][j] == OMushroom)
-            {
-                Window.draw(MushroomSprites[Mushrooms[i][j]]);
-            }
-        }
+        Window.draw(MushroomSprites[i]);
     }
 }
 bool CheckCollision(int Object[], int Direction, int &collided_object)
