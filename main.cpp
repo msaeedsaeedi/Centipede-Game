@@ -59,11 +59,11 @@ int gameGrid[gameRows][gameColumns] = {};
 void RenderPlayer(RenderWindow &window, int player[], Sprite &playersprite); // Render Player
 void MovePlayer(int player[], int direction);                                // Control Player Movement
 
-void SpawnLaser(float Lasers[][3], const int player[], Sprite LaserSprites[]);    // Spawn a single bullet
-void RenderLasers(RenderWindow &window, float Lasers[][3], Sprite LaserSprite[]); // Render Bullet
-void MoveLasers(float Laser[][3]);                                                // Control Bullet Movement
+void SpawnLaser(float Lasers[][3], const int player[], Sprite LaserSprites[], Texture &LaserTexture); // Spawn a single bullet
+void RenderLasers(RenderWindow &window, float Lasers[][3], Sprite LaserSprite[]);                     // Render Bullet
+void MoveLasers(float Laser[][3]);                                                                    // Control Bullet Movement
 
-void GenerateMushrooms(Sprite MushroomSprites[], int &MushroomsCount);
+void GenerateMushrooms(Sprite MushroomSprites[], int &MushroomsCount, Texture &MushroomTexture);
 void RenderMushrooms(RenderWindow &Window, Sprite MushroomSprites[], int MushroomsCount);
 
 void HandlePlayer(int player[2]); // Handle KeyBoard Inputs
@@ -109,14 +109,19 @@ int main()
 
     float Lasers[MAX_LASERS][3]{};
     Sprite LaserSprites[MAX_LASERS]{};
+    Texture LaserTexture;
+    LaserTexture.loadFromFile("Textures/bullet.png");
+    LaserTexture.setSmooth(true);
 
     int MushroomsCount = 0;
     Sprite MushroomSprites[MAX_MASHROOMS]{};
+    Texture MushroomTexture;
+    MushroomTexture.loadFromFile("Textures/mushroom.png");
 
     /*
         Initialization
     */
-    GenerateMushrooms(MushroomSprites, MushroomsCount);
+    GenerateMushrooms(MushroomSprites, MushroomsCount, MushroomTexture);
 
     /*
         Clocks
@@ -165,7 +170,7 @@ int main()
         {
             if (Keyboard::isKeyPressed(Keyboard::Z))
             {
-                SpawnLaser(Lasers, Player, LaserSprites);
+                SpawnLaser(Lasers, Player, LaserSprites, LaserTexture);
                 LaserClock.restart();
             }
         }
@@ -269,12 +274,8 @@ void RenderPlayer(RenderWindow &window, int player[], Sprite &playersprite)
     playersprite.setPosition(player[x] * boxPixelsX, player[y] * boxPixelsY);
     window.draw(playersprite);
 }
-void SpawnLaser(float Lasers[][3], const int player[], Sprite LaserSprites[])
+void SpawnLaser(float Lasers[][3], const int player[], Sprite LaserSprites[], Texture &LaserTexture)
 {
-    static Texture LaserTexture;
-    LaserTexture.loadFromFile("Textures/bullet.png");
-    LaserTexture.setSmooth(true);
-
     for (int i = 0; i < MAX_LASERS; i++)
     {
         if (Lasers[i][exists] == false)
@@ -328,13 +329,12 @@ void MoveLasers(float Laser[][3])
         }
     }
 }
-void GenerateMushrooms(Sprite MushroomSprites[], int &MushroomsCount)
+void GenerateMushrooms(Sprite MushroomSprites[], int &MushroomsCount, Texture &MushroomTexture)
 {
     srand(time(0));
     int R_MushroomsCount = (rand() % 11) + 20;
     float RandomPosition[2]{};
-    static Texture MushroomTexture;
-    MushroomTexture.loadFromFile("Textures/mushroom.png");
+
     MushroomsCount = R_MushroomsCount;
     for (int i = 0; i < R_MushroomsCount; i++)
     {
