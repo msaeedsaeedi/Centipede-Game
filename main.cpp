@@ -70,6 +70,7 @@ void MoveLasers(float Laser[][3], int *&MushroomsPtr);                          
 
 void GenerateMushrooms(Sprite MushroomSprites[], Texture &MushroomTexture, int *&Mushrooms);
 void RenderMushrooms(RenderWindow &Window, Sprite MushroomSprites[], int *&Mushrooms);
+void DestructMushroom(int Position[], int *&MushroomsPtr);
 int GetMushroom(int Position[], int *Mushroomsptr);
 
 void HandlePlayer(int player[2]); // Handle KeyBoard Inputs
@@ -337,15 +338,21 @@ void MoveLasers(float Laser[][3], int *&MushroomsPtr)
                     switch (collided_object)
                     {
                     case OMushroom:
-                        *(MushroomsPtr + GetMushroom(Position, MushroomsPtr) + health) = 0;
+                        DestructMushroom(Position, MushroomsPtr);
                         break;
                     }
                     Laser[i][exists] = false;
-                    UpdateGrid(Position[x], Position[y], ONone);
                 }
             }
         }
     }
+}
+void DestructMushroom(int Position[], int *&MushroomsPtr)
+{
+    int *mushroom_health = (MushroomsPtr + GetMushroom(Position, MushroomsPtr) + health);
+    *mushroom_health = *mushroom_health - 1;
+    if (*mushroom_health == 0)
+        UpdateGrid(Position[x], Position[y], ONone);
 }
 void GenerateMushrooms(Sprite MushroomSprites[], Texture &MushroomTexture, int *&Mushrooms)
 {
