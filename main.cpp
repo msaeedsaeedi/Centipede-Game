@@ -225,16 +225,16 @@ void HandlePlayer(int player[2])
 {
     if (Keyboard::isKeyPressed(Keyboard::Up))
         MovePlayer(player, UP);
-    if (Keyboard::isKeyPressed(Keyboard::Down))
+    else if (Keyboard::isKeyPressed(Keyboard::Down))
         MovePlayer(player, DOWN);
-    if (Keyboard::isKeyPressed(Keyboard::Left))
+    else if (Keyboard::isKeyPressed(Keyboard::Left))
         MovePlayer(player, LEFT);
-    if (Keyboard::isKeyPressed(Keyboard::Right))
+    else if (Keyboard::isKeyPressed(Keyboard::Right))
         MovePlayer(player, RIGHT);
 }
 void MovePlayer(int player[], int direction)
 {
-    UpdateGrid(player[x], player[y], ONone);
+    UpdateGrid(player[x], player[y], ONone); // Modify this code Whole function
     switch (direction)
     {
     case UP:
@@ -322,12 +322,9 @@ void MoveLasers(float Laser[][3], int *&MushroomsPtr)
         {
             int Position[] = {int(Laser[i][x]), int(floor(Laser[i][y]) + 1)};
             UpdateGrid(Position[x], Position[y], ONone);
-
             Laser[i][y] -= 50 * delta;
             if (Laser[i][y] < -1)
-            {
                 Laser[i][exists] = false;
-            }
             else if (Laser[i][y] > -1)
             {
                 int collided_object = 0;
@@ -366,9 +363,7 @@ void GenerateMushrooms(Sprite MushroomSprites[], Texture &MushroomTexture, int *
         int Grid_Y = rand() % (gameRows - 5);
         if (gameGrid[Grid_Y][Grid_X] == ONone)
         {
-
             UpdateGrid(Grid_X, Grid_Y, OMushroom);
-
             MushroomSprites[i].setTexture(MushroomTexture);
             MushroomSprites[i].setTextureRect(IntRect(0, boxPixelsX, boxPixelsX, boxPixelsY));
             *(Mushrooms + x + i * 3) = Grid_X;
@@ -393,23 +388,18 @@ void RenderMushrooms(RenderWindow &Window, Sprite MushroomSprites[], int *&Mushr
 int GetMushroom(int Position[], int *Mushroomsptr)
 {
     for (int i = 0; i < MushroomsCount; i++)
-    {
         if (*(Mushroomsptr + x + i * 3) == Position[x] && *(Mushroomsptr + i * 3 + y) == Position[y])
             return i * 3;
-    }
     return 0;
 }
 
 bool UpdateGrid(int Grid_x, int Grid_y, int object)
 {
     if (object != ONone)
-    {
         if ((gameGrid[Grid_y][Grid_x] != OPlayer) || (object != OLaser))
-        {
             if (gameGrid[Grid_y][Grid_x] != ONone)
                 return true;
-        }
-    }
+
     gameGrid[Grid_y][Grid_x] = object;
     return false;
 }
