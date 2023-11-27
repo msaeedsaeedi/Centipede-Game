@@ -485,13 +485,14 @@ void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int &cen
     *(centepede_ptr[centepedes_count - 1][0] + x) = Position[x];
     *(centepede_ptr[centepedes_count - 1][0] + y) = Position[y];
     *(centepede_ptr[centepedes_count - 1][0] + CDirection) = LEFT;
+    UpdateGrid(Position[x], Position[y], OCentepede);
     for (int j = 1; j < size; j++)
     {
         centepede_ptr[centepedes_count - 1][j] = new int[2];
         *(centepede_ptr[centepedes_count - 1][j] + x) = Position[x] + j;
         *(centepede_ptr[centepedes_count - 1][j] + y) = Position[y];
+        UpdateGrid(Position[x] + j, Position[y], OCentepede);
     }
-    UpdateGrid(Position[x], Position[y], OCentepede);
 }
 
 void DeleteCentepede(int ***&centepede_ptr, int n, int &centepedes_count)
@@ -538,11 +539,15 @@ void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&mushroom_
     for (int i = 0; i < centepedes_count; i++)
     {
         int size = centepede_ptr[i][0][CSize];
+        for (int j = 1; j < size; j++)
+            UpdateGrid(centepede_ptr[i][j][x], centepede_ptr[i][j][y], ONone);
         for (int j = size - 1; j > 0; j--)
         {
             centepede_ptr[i][j][x] = centepede_ptr[i][j - 1][x];
             centepede_ptr[i][j][y] = centepede_ptr[i][j - 1][y];
         }
+        for (int j = 1; j < size; j++)
+            UpdateGrid(centepede_ptr[i][j][x], centepede_ptr[i][j][y], OCentepede);
     }
     int P_direction = centepede_ptr[0][0][CDirection];
     int Position[2]{};
@@ -569,5 +574,4 @@ void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&mushroom_
     case RIGHT:
         *(centepede_ptr[0][0] + x) += step_size;
     }
-
 }
