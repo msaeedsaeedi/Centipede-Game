@@ -80,7 +80,7 @@ int GetMushroom(int Position[], int *Mushroomsptr);
 void HandlePlayer(int player[2]); // Handle KeyBoard Inputs
 
 bool UpdateGrid(int Grid_x, int Grid_y, int object);
-bool UpdateGrid(int Grid_x, int Grid_y, int object, int &collidedObject);
+bool UpdateGrid(int Grid_x, int Grid_y, int object, int &collidedObject, int Direction);
 
 void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int &centepedes_count);
 void DeleteCentepede(int ***&centepede_ptr, int n, int &centepedes_count);
@@ -211,15 +211,16 @@ int main()
         */
         MoveLasers(Lasers, MushroomsPtr);
 
-        /* system("clear");
+        system("clear");
         for (int i = 0; i < gameRows; i++)
         {
             for (int j = 0; j < gameColumns; j++)
             {
                 cout << gameGrid[i][j] << "  ";
             }
-            cout << endl;
-        } */
+            cout << "\n";
+        }
+        cout << endl;
 
         /*
             -> Render Objects
@@ -347,7 +348,7 @@ void MoveLasers(float Laser[][3], int *&MushroomsPtr)
                 int collided_object = 0;
                 Position[x] = int(Laser[i][x]);
                 Position[y] = int(floor(Laser[i][y]) + 1);
-                if (UpdateGrid(Position[x], Position[y], OLaser, collided_object))
+                if (UpdateGrid(Position[x], Position[y], OLaser, collided_object, UP))
                 {
                     switch (collided_object)
                     {
@@ -432,13 +433,25 @@ bool UpdateGrid(int Grid_x, int Grid_y, int object)
     gameGrid[Grid_y][Grid_x] = object;
     return false;
 }
-bool UpdateGrid(int Grid_x, int Grid_y, int object, int &collidedObject)
+bool UpdateGrid(int Grid_x, int Grid_y, int object, int &collidedObject, int Direction)
 {
-    if (Grid_x == 0 || Grid_x == gameColumns - 1)
+    switch (Direction)
     {
-        collidedObject = OWalls;
-        return true;
+    case LEFT:
+        if (Grid_x == 0)
+        {
+            collidedObject = OWalls;
+            return true;
+        }
+        break;
+    case RIGHT:
+        if (Grid_x == gameColumns - 1)
+        {
+            collidedObject = OWalls;
+            return true;
+        }
     }
+
     if (object != ONone)
     {
         if ((gameGrid[Grid_y][Grid_x] != OPlayer) || (object != OLaser))
@@ -536,18 +549,12 @@ void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&mushroom_
     Position[x] = centepede_ptr[0][0][x];
     Position[y] = centepede_ptr[0][0][y];
     int collided_object = 0;
-    if (UpdateGrid(Position[x], Position[y], OCentepede, collided_object))
+    if (UpdateGrid(Position[x], Position[y], OCentepede, collided_object, P_direction))
     {
-        if (collided_object == OWalls)
+        if (collided_object != OCentepede)
         {
-            *(centepede_ptr[0][0] + CDirection) = (*(centepede_ptr[0][0] + CDirection) == RIGHT) ? (LEFT) : (RIGHT);
-            *(centepede_ptr[0][0] + y) += step_size;
-            P_direction = centepede_ptr[0][0][CDirection];
-            return;
-        }
-        else if (collided_object != OCentepede)
-        {
-            DestroyMushroom(Position, mushroom_ptr);
+            if (collided_object == OMushroom)
+                DestroyMushroom(Position, mushroom_ptr);
             *(centepede_ptr[0][0] + CDirection) = (*(centepede_ptr[0][0] + CDirection) == RIGHT) ? (LEFT) : (RIGHT);
             *(centepede_ptr[0][0] + y) += step_size;
             P_direction = centepede_ptr[0][0][CDirection];
@@ -562,4 +569,5 @@ void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&mushroom_
     case RIGHT:
         *(centepede_ptr[0][0] + x) += step_size;
     }
+
 }
