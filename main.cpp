@@ -85,7 +85,7 @@ int main()
     */
     RenderWindow window(VideoMode(resolutionX, resolutionY), "Centipede", Style::Close | Style::Titlebar);
     window.setSize(Vector2u(640, 640));
-    window.setPosition(Vector2i(400, 200));
+    window.setPosition(Vector2i(400, 50));
 
     /*
         Setup Objects For Rendering
@@ -380,6 +380,8 @@ void RenderMushrooms(RenderWindow &Window, Sprite MushroomSprites[], int *&Mushr
     {
         if (*(Mushrooms + health + i * 3) != 0)
         {
+            if (*(Mushrooms + i * 3 + health) == 1)
+                MushroomSprites[i].setTextureRect(IntRect(boxPixelsX, boxPixelsX, boxPixelsX, boxPixelsY));
             MushroomSprites[i].setPosition(*(Mushrooms + x + i * 3) * boxPixelsX, *(Mushrooms + y + i * 3) * boxPixelsY);
             Window.draw(MushroomSprites[i]);
         }
