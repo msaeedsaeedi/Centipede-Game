@@ -550,53 +550,54 @@ void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&mushroom_
         }
         for (int j = 1; j < size; j++)
             UpdateGrid(centepede_ptr[i][j][x], centepede_ptr[i][j][y], OCentepede);
-    }
-    int P_direction = centepede_ptr[0][0][CDirection];
-    int Position[2]{};
-    Position[x] = centepede_ptr[0][0][x];
-    Position[y] = centepede_ptr[0][0][y];
-    int collided_object = 0;
-    int PreviousObject = gameGrid[Position[y]][Position[x]];
-    if (UpdateGrid(Position[x], Position[y], OCentepede, collided_object, P_direction))
-    {
-        if (collided_object == OWalls)
-        {
-            if (PreviousObject == OMushroom)
-                DestroyMushroom(Position, mushroom_ptr);
-        }
-        if (collided_object != OCentepede)
-        {
-            if (collided_object == OMushroom)
-                DestroyMushroom(Position, mushroom_ptr);
-            *(centepede_ptr[0][0] + CDirection) = (*(centepede_ptr[0][0] + CDirection) == RIGHT) ? (LEFT) : (RIGHT);
 
-            if (Position[y] == (gameRows - 1))
+        int P_direction = centepede_ptr[0][0][CDirection];
+        int Position[2]{};
+        Position[x] = centepede_ptr[i][0][x];
+        Position[y] = centepede_ptr[i][0][y];
+        int collided_object = 0;
+        int PreviousObject = gameGrid[Position[y]][Position[x]];
+        if (UpdateGrid(Position[x], Position[y], OCentepede, collided_object, P_direction))
+        {
+            if (collided_object == OWalls)
             {
-                *(centepede_ptr[0][0] + TDirection) = UP;
+                if (PreviousObject == OMushroom)
+                    DestroyMushroom(Position, mushroom_ptr);
             }
-            else if (Position[y] < (gameRows - 4))
+            if (collided_object != OCentepede)
             {
-                *(centepede_ptr[0][0] + TDirection) = DOWN;
+                if (collided_object == OMushroom)
+                    DestroyMushroom(Position, mushroom_ptr);
+                centepede_ptr[i][0][CDirection] = ((centepede_ptr[i][0][CDirection]) == RIGHT) ? (LEFT) : (RIGHT);
+
+                if (Position[y] == (gameRows - 1))
+                {
+                    centepede_ptr[i][0][TDirection] = UP;
+                }
+                else if (Position[y] < (gameRows - 4))
+                {
+                    centepede_ptr[i][0][TDirection] = DOWN;
+                }
+                switch (centepede_ptr[i][0][TDirection])
+                {
+                case DOWN:
+                    centepede_ptr[i][0][y] += step_size;
+                    break;
+                case UP:
+                    centepede_ptr[i][0][y] -= step_size;
+                    break;
+                }
+                P_direction = centepede_ptr[i][0][CDirection];
+                return;
             }
-            switch (*(centepede_ptr[0][0] + TDirection))
-            {
-            case DOWN:
-                *(centepede_ptr[0][0] + y) += step_size;
-                break;
-            case UP:
-                *(centepede_ptr[0][0] + y) -= step_size;
-                break;
-            }
-            P_direction = centepede_ptr[0][0][CDirection];
-            return;
         }
-    }
-    switch (P_direction)
-    {
-    case LEFT:
-        *(centepede_ptr[0][0] + x) -= step_size;
-        break;
-    case RIGHT:
-        *(centepede_ptr[0][0] + x) += step_size;
+        switch (P_direction)
+        {
+        case LEFT:
+            centepede_ptr[i][0][x] -= step_size;
+            break;
+        case RIGHT:
+            centepede_ptr[i][0][x] += step_size;
+        }
     }
 }
