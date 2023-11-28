@@ -41,6 +41,7 @@ const int health = 2; // Specifically for [Mushroom]
 
 const int CDirection = 2;
 const int CSize = 3;
+const int TDirection = 4;
 
 const int UP = 0;    // Move UP
 const int DOWN = 1;  // Move Down
@@ -189,7 +190,7 @@ int main()
                 - Player Movement
                 - Laser Shots
         */
-        if (PlayerMovementClock.getElapsedTime().asMilliseconds() > 200)
+        if (PlayerMovementClock.getElapsedTime().asMilliseconds() > 100)
         {
             HandlePlayer(Player);
             PlayerMovementClock.restart();
@@ -211,7 +212,7 @@ int main()
         */
         MoveLasers(Lasers, MushroomsPtr);
 
-        system("clear");
+        /* system("clear");
         for (int i = 0; i < gameRows; i++)
         {
             for (int j = 0; j < gameColumns; j++)
@@ -220,7 +221,7 @@ int main()
             }
             cout << "\n";
         }
-        cout << endl;
+        cout << endl; */
 
         /*
             -> Render Objects
@@ -480,11 +481,12 @@ void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int &cen
     centepede_ptr = D_temp;
 
     centepede_ptr[centepedes_count - 1] = new int *[size];
-    centepede_ptr[centepedes_count - 1][0] = new int[4];
+    centepede_ptr[centepedes_count - 1][0] = new int[5];
     *(centepede_ptr[centepedes_count - 1][0] + CSize) = size;
     *(centepede_ptr[centepedes_count - 1][0] + x) = Position[x];
     *(centepede_ptr[centepedes_count - 1][0] + y) = Position[y];
     *(centepede_ptr[centepedes_count - 1][0] + CDirection) = LEFT;
+    *(centepede_ptr[centepedes_count - 1][0] + TDirection) = DOWN;
     UpdateGrid(Position[x], Position[y], OCentepede);
     for (int j = 1; j < size; j++)
     {
@@ -556,12 +558,33 @@ void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&mushroom_
     int collided_object = 0;
     if (UpdateGrid(Position[x], Position[y], OCentepede, collided_object, P_direction))
     {
+        if (collided_object == OWalls)
+        {
+            DestroyMushroom(Position, mushroom_ptr);
+        }
         if (collided_object != OCentepede)
         {
             if (collided_object == OMushroom)
                 DestroyMushroom(Position, mushroom_ptr);
             *(centepede_ptr[0][0] + CDirection) = (*(centepede_ptr[0][0] + CDirection) == RIGHT) ? (LEFT) : (RIGHT);
-            *(centepede_ptr[0][0] + y) += step_size;
+
+            if (Position[y] == (gameRows - 1))
+            {
+                *(centepede_ptr[0][0] + TDirection) = UP;
+            }
+            else if (Position[y] < (gameRows - 4))
+            {
+                *(centepede_ptr[0][0] + TDirection) = DOWN;
+            }
+            switch (*(centepede_ptr[0][0] + TDirection))
+            {
+            case DOWN:
+                *(centepede_ptr[0][0] + y) += step_size;
+                break;
+            case UP:
+                *(centepede_ptr[0][0] + y) -= step_size;
+                break;
+            }
             P_direction = centepede_ptr[0][0][CDirection];
             return;
         }
