@@ -556,11 +556,13 @@ void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&mushroom_
     Position[x] = centepede_ptr[0][0][x];
     Position[y] = centepede_ptr[0][0][y];
     int collided_object = 0;
+    int PreviousObject = gameGrid[Position[y]][Position[x]];
     if (UpdateGrid(Position[x], Position[y], OCentepede, collided_object, P_direction))
     {
         if (collided_object == OWalls)
         {
-            DestroyMushroom(Position, mushroom_ptr);
+            if (PreviousObject == OMushroom)
+                DestroyMushroom(Position, mushroom_ptr);
         }
         if (collided_object != OCentepede)
         {
