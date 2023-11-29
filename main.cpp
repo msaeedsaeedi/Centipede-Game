@@ -238,7 +238,6 @@ int main()
         window.display();
         window.clear();
     }
-    delete[] MushroomsPtr;
     return 0;
 }
 void HandlePlayer(int player[2])
@@ -340,7 +339,7 @@ void MoveLasers(float Laser[][3], int *&MushroomsPtr)
     {
         if (Laser[i][exists] == true)
         {
-            int Position[] = {int(Laser[i][x]), int(floor(Laser[i][y]) + 1)};
+            int Position[] = {int(Laser[i][x]), int(ceil(Laser[i][y]))};
             UpdateGrid(Position[x], Position[y], ONone);
             Laser[i][y] -= 50 * delta;
             if (Laser[i][y] < -1)
@@ -356,6 +355,9 @@ void MoveLasers(float Laser[][3], int *&MushroomsPtr)
                     {
                     case OMushroom:
                         DestructMushroom(Position, MushroomsPtr);
+                        break;
+                    case OCentepede:
+                        cout << "Y : " << ceil(Laser[i][y]) + 1 << ", X : " << Laser[i][x] << endl;
                         break;
                     }
                     Laser[i][exists] = false;
