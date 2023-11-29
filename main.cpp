@@ -83,9 +83,9 @@ void HandlePlayer(int player[2]); // Handle KeyBoard Inputs
 bool UpdateGrid(int Grid_x, int Grid_y, int object);
 bool UpdateGrid(int Grid_x, int Grid_y, int object, int &collidedObject, int Direction);
 
-void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int &centepedes_count);
+void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int Direction, int &centepedes_count);
 void DeleteCentepede(int ***&centepede_ptr, int n, int &centepedes_count);
-void RenderCentepedes(RenderWindow &Window, Texture CentepedeTexture, int ***&centepede_ptr, int centepedes_count);
+void RenderCentepedes(RenderWindow &Window, Texture CentepedeTexture_HEAD, Texture CentepedeTexture_BODY, int ***&centepede_ptr, int centepedes_count);
 void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&MushroomsPtr);
 
 int main()
@@ -114,9 +114,10 @@ int main()
     PlayerTexture.loadFromFile("Textures/player.png");
     PlayerSprite.setTexture(PlayerTexture);
 
-    Texture CentepedeTexture;
-    CentepedeTexture.loadFromFile("Textures/c_head_left_walk.png");
-
+    Texture CentepedeTexture_HEAD;
+    Texture CentepedeTexture_BODY;
+    CentepedeTexture_HEAD.loadFromFile("Textures/c_head_left_walk.png");
+    CentepedeTexture_BODY.loadFromFile("Textures/c_body_left_walk.png");
     /*
         Setup Data
             - Player
@@ -150,7 +151,7 @@ int main()
         Initialization
     */
     GenerateMushrooms(MushroomSprites, MushroomTexture, MushroomsPtr);
-    GenerateCentipede(centepede_ptr, 12, Position, centepedes_count);
+    GenerateCentipede(centepede_ptr, 12, Position, LEFT, centepedes_count);
 
     /*
         Clocks
@@ -228,7 +229,7 @@ int main()
         */
         window.draw(BackgroundSprite);
         RenderPlayer(window, Player, PlayerSprite);
-        RenderCentepedes(window, CentepedeTexture, centepede_ptr, centepedes_count);
+        RenderCentepedes(window, CentepedeTexture_HEAD, CentepedeTexture_BODY, centepede_ptr, centepedes_count);
         RenderLasers(window, Lasers, LaserSprites);
         RenderMushrooms(window, MushroomSprites, MushroomsPtr);
         /*
@@ -468,7 +469,7 @@ bool UpdateGrid(int Grid_x, int Grid_y, int object, int &collidedObject, int Dir
     return false;
 }
 
-void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int &centepedes_count)
+void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int Direction, int &centepedes_count)
 {
     centepedes_count++;
     int ***D_temp = 0;
@@ -485,14 +486,15 @@ void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int &cen
     *(centepede_ptr[centepedes_count - 1][0] + CSize) = size;
     *(centepede_ptr[centepedes_count - 1][0] + x) = Position[x];
     *(centepede_ptr[centepedes_count - 1][0] + y) = Position[y];
-    *(centepede_ptr[centepedes_count - 1][0] + CDirection) = LEFT;
+    *(centepede_ptr[centepedes_count - 1][0] + CDirection) = Direction;
     *(centepede_ptr[centepedes_count - 1][0] + TDirection) = DOWN;
     UpdateGrid(Position[x], Position[y], OCentepede);
     for (int j = 1; j < size; j++)
     {
-        centepede_ptr[centepedes_count - 1][j] = new int[2];
+        centepede_ptr[centepedes_count - 1][j] = new int[3];
         *(centepede_ptr[centepedes_count - 1][j] + x) = Position[x] + j;
-        *(centepede_ptr[centepedes_count - 1][j] + y) = Position[y];
+        *(centepede_ptr[centepedes_count - 1][j] + y) = -1;
+        *(centepede_ptr[centepedes_count - 1][j] + CDirection) = Direction;
         UpdateGrid(Position[x] + j, Position[y], OCentepede);
     }
 }
@@ -518,19 +520,37 @@ void DeleteCentepede(int ***&centepede_ptr, int n, int &centepedes_count)
     delete[] centepede_ptr;
     centepede_ptr = D_temp;
 }
-void RenderCentepedes(RenderWindow &Window, Texture CentepedeTexture, int ***&centepede_ptr, int centepedes_count)
+void RenderCentepedes(RenderWindow &Window, Texture CentepedeTexture_HEAD, Texture CentepedeTexture_BODY, int ***&centepede_ptr, int centepedes_count)
 {
     for (int i = 0; i < centepedes_count; i++)
     {
         int size = centepede_ptr[i][0][CSize];
-        for (int j = 0; j < size; j++)
+
+        /*
+            HEAD Rendering
+        */
+        {
+            Sprite head;
+            int X = (centepede_ptr[i][0][x]);
+            int Y = (centepede_ptr[i][0][y]);
+            head.setTexture(CentepedeTexture_HEAD);
+            head.setTextureRect(IntRect(0, 0, boxPixelsX, boxPixelsY));
+            head.setPosition(X * boxPixelsX, Y * boxPixelsY);
+            if (centepede_ptr[i][0][CDirection] == RIGHT)
+                head.setOrigin(boxPixelsX, boxPixelsY), head.setRotation(180);
+            Window.draw(head);
+        }
+
+        for (int j = 1; j < size; j++)
         {
             Sprite sm;
             int X = (centepede_ptr[i][j][x]);
             int Y = (centepede_ptr[i][j][y]);
-            sm.setTexture(CentepedeTexture);
+            sm.setTexture(CentepedeTexture_BODY);
             sm.setTextureRect(IntRect(0, 0, boxPixelsX, boxPixelsY));
             sm.setPosition(X * boxPixelsX, Y * boxPixelsY);
+            if (centepede_ptr[i][j][CDirection] == RIGHT)
+                sm.setOrigin(boxPixelsX, boxPixelsY), sm.setRotation(180);
             Window.draw(sm);
         }
     }
@@ -547,6 +567,7 @@ void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&mushroom_
         {
             centepede_ptr[i][j][x] = centepede_ptr[i][j - 1][x];
             centepede_ptr[i][j][y] = centepede_ptr[i][j - 1][y];
+            centepede_ptr[i][j][CDirection] = centepede_ptr[i][j - 1][CDirection];
         }
         for (int j = 1; j < size; j++)
             UpdateGrid(centepede_ptr[i][j][x], centepede_ptr[i][j][y], OCentepede);
