@@ -70,7 +70,7 @@ void MovePlayer(int player[], int direction);                                // 
 
 void SpawnLaser(float Lasers[][3], const int player[], Sprite LaserSprites[], Texture &LaserTexture); // Spawn a single bullet
 void RenderLasers(RenderWindow &window, float Lasers[][3], Sprite LaserSprite[]);                     // Render Bullet
-void MoveLasers(float Laser[][3], int *&MushroomsPtr);                                                // Control Bullet Movement
+void MoveLasers(float Laser[][3], int *&MushroomsPtr, int ***&CentipedePtr, int &centipedes_count);   // Control Bullet Movement
 
 void GenerateMushrooms(Sprite MushroomSprites[], Texture &MushroomTexture, int *&Mushrooms);
 void RenderMushrooms(RenderWindow &Window, Sprite MushroomSprites[], int *&Mushrooms);
@@ -87,6 +87,8 @@ void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int Dire
 void DeleteCentepede(int ***&centepede_ptr, int n, int &centepedes_count);
 void RenderCentepedes(RenderWindow &Window, Texture CentepedeTexture_HEAD, Texture CentepedeTexture_BODY, int ***&centepede_ptr, int centepedes_count);
 void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&MushroomsPtr);
+int GetCentipede(int ***&centipedeptr, int centipedes_count, int Position[]);
+int GetCentipedeBodyIndex(int ***&centipedeptr, int centipede_n, int Position[]);
 
 int main()
 {
@@ -150,8 +152,8 @@ int main()
     /*
         Initialization
     */
+    GenerateCentipede(centepede_ptr, 10, Position, LEFT, centepedes_count);
     GenerateMushrooms(MushroomSprites, MushroomTexture, MushroomsPtr);
-    GenerateCentipede(centepede_ptr, 12, Position, LEFT, centepedes_count);
 
     /*
         Clocks
@@ -211,9 +213,9 @@ int main()
                 - Lasers
                 - Centepede
         */
-        MoveLasers(Lasers, MushroomsPtr);
+        MoveLasers(Lasers, MushroomsPtr, centepede_ptr, centepedes_count);
 
-        /* system("clear");
+        system("clear");
         for (int i = 0; i < gameRows; i++)
         {
             for (int j = 0; j < gameColumns; j++)
@@ -222,7 +224,7 @@ int main()
             }
             cout << "\n";
         }
-        cout << endl; */
+        cout << endl;
 
         /*
             -> Render Objects
@@ -333,7 +335,7 @@ void RenderLasers(RenderWindow &window, float Lasers[][3], Sprite LaserSprite[])
         }
     }
 }
-void MoveLasers(float Laser[][3], int *&MushroomsPtr)
+void MoveLasers(float Laser[][3], int *&MushroomsPtr, int ***&CentipedePtr, int &centipedes_count)
 {
     for (int i = 0; i < MAX_LASERS; i++)
     {
@@ -357,8 +359,33 @@ void MoveLasers(float Laser[][3], int *&MushroomsPtr)
                         DestructMushroom(Position, MushroomsPtr);
                         break;
                     case OCentepede:
-                        cout << "Y : " << ceil(Laser[i][y]) + 1 << ", X : " << Laser[i][x] << endl;
-                        break;
+                    {
+                        int centipede_n = GetCentipede(CentipedePtr, centipedes_count, Position);
+                        if (centipede_n == -1)
+                            break;
+                        int size = CentipedePtr[centipede_n][0][CSize];
+                        int body_index = GetCentipedeBodyIndex(CentipedePtr, centipede_n, Position);
+                        if (body_index == -1)
+                            break;
+                        int Direction = CentipedePtr[centipede_n][0][CDirection];
+                        DeleteCentepede(CentipedePtr, centipede_n, centipedes_count);
+                        if (body_index != 0)
+                        {
+                            if (Direction == LEFT)
+                                Position[x] -= body_index;
+                            else
+                                Position[x] += body_index;
+                            GenerateCentipede(CentipedePtr, body_index, Position, Direction, centipedes_count);
+                            if (Direction == LEFT)
+                                Position[x] += size;
+                            else
+                                Position[x] -= size;
+                            GenerateCentipede(CentipedePtr, size - body_index, Position, (Direction == LEFT) ? (RIGHT) : (LEFT), centipedes_count);
+                        }
+                        else
+                            cout << "HEADSHOT" << endl;
+                    }
+                    break;
                     }
                     Laser[i][exists] = false;
                 }
@@ -494,8 +521,11 @@ void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int Dire
     for (int j = 1; j < size; j++)
     {
         centepede_ptr[centepedes_count - 1][j] = new int[3];
-        *(centepede_ptr[centepedes_count - 1][j] + x) = Position[x] + j;
-        *(centepede_ptr[centepedes_count - 1][j] + y) = -1;
+        if (Direction == LEFT)
+            *(centepede_ptr[centepedes_count - 1][j] + x) = Position[x] + j;
+        else
+            *(centepede_ptr[centepedes_count - 1][j] + x) = Position[x] - j;
+        *(centepede_ptr[centepedes_count - 1][j] + y) = Position[y];
         *(centepede_ptr[centepedes_count - 1][j] + CDirection) = Direction;
         UpdateGrid(Position[x] + j, Position[y], OCentepede);
     }
@@ -503,24 +533,25 @@ void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int Dire
 
 void DeleteCentepede(int ***&centepede_ptr, int n, int &centepedes_count)
 {
-    centepedes_count--;
     int size_of_centepede = centepede_ptr[n][0][CSize];
     for (int j = 0; j < size_of_centepede; j++)
     {
+        UpdateGrid(centepede_ptr[n][j][x], centepede_ptr[n][j][y], ONone);
         delete[] centepede_ptr[n][j];
     }
     delete[] centepede_ptr[n];
     centepede_ptr[n] = 0;
     int ***D_temp = 0;
     if (centepedes_count != 0)
-        D_temp = new int **[centepedes_count];
-    for (int i = 0; i < centepedes_count - 1; i++)
+        D_temp = new int **[centepedes_count - 1];
+    for (int i = 0, j = 0; i < centepedes_count; i++)
     {
         if (centepede_ptr[i] != 0)
-            D_temp[i] = centepede_ptr[i];
+            D_temp[j] = centepede_ptr[i], j++;
     }
     delete[] centepede_ptr;
     centepede_ptr = D_temp;
+    centepedes_count--;
 }
 void RenderCentepedes(RenderWindow &Window, Texture CentepedeTexture_HEAD, Texture CentepedeTexture_BODY, int ***&centepede_ptr, int centepedes_count)
 {
@@ -562,8 +593,15 @@ void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&mushroom_
     const int step_size = 1;
     for (int i = 0; i < centepedes_count; i++)
     {
+        int collided_object = 0;
         int size = centepede_ptr[i][0][CSize];
-        for (int j = 1; j < size; j++)
+        int P_direction = centepede_ptr[i][0][CDirection];
+        int Position[2]{
+            centepede_ptr[i][0][x],
+            centepede_ptr[i][0][y]};
+        int PreviousObject = gameGrid[Position[y]][Position[x]];
+
+        for (int j = 0; j < size; j++)
             UpdateGrid(centepede_ptr[i][j][x], centepede_ptr[i][j][y], ONone);
         for (int j = size - 1; j > 0; j--)
         {
@@ -571,16 +609,7 @@ void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&mushroom_
             centepede_ptr[i][j][y] = centepede_ptr[i][j - 1][y];
             centepede_ptr[i][j][CDirection] = centepede_ptr[i][j - 1][CDirection];
         }
-        for (int j = 1; j < size; j++)
-            UpdateGrid(centepede_ptr[i][j][x], centepede_ptr[i][j][y], OCentepede);
-
-        int P_direction = centepede_ptr[0][0][CDirection];
-        int Position[2]{};
-        Position[x] = centepede_ptr[i][0][x];
-        Position[y] = centepede_ptr[i][0][y];
-        int collided_object = 0;
-        int PreviousObject = gameGrid[Position[y]][Position[x]];
-        if (UpdateGrid(Position[x], Position[y], OCentepede, collided_object, P_direction))
+        if (PreviousObject == OMushroom || UpdateGrid(Position[x], Position[y], OCentepede, collided_object, P_direction))
         {
             if (collided_object == OWalls)
             {
@@ -589,7 +618,7 @@ void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&mushroom_
             }
             if (collided_object != OCentepede)
             {
-                if (collided_object == OMushroom)
+                if (PreviousObject == OMushroom)
                     DestroyMushroom(Position, mushroom_ptr);
                 centepede_ptr[i][0][CDirection] = ((centepede_ptr[i][0][CDirection]) == RIGHT) ? (LEFT) : (RIGHT);
 
@@ -614,6 +643,7 @@ void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&mushroom_
                 return;
             }
         }
+        UpdateGrid(centepede_ptr[i][0][x], centepede_ptr[i][0][y], ONone);
         switch (P_direction)
         {
         case LEFT:
@@ -622,5 +652,34 @@ void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&mushroom_
         case RIGHT:
             centepede_ptr[i][0][x] += step_size;
         }
+        for (int j = 0; j < size; j++)
+            UpdateGrid(centepede_ptr[i][j][x], centepede_ptr[i][j][y], OCentepede);
     }
+}
+int GetCentipede(int ***&centipedeptr, int centipedes_count, int Position[])
+{
+    for (int i = 0; i < centipedes_count; i++)
+    {
+        int size = centipedeptr[i][0][CSize];
+        for (int j = 0; j < size; j++)
+        {
+            if (centipedeptr[i][j][x] == Position[x] && centipedeptr[i][j][y] == Position[y])
+            {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+int GetCentipedeBodyIndex(int ***&centipedeptr, int centipede_n, int Position[])
+{
+    int size = centipedeptr[centipede_n][0][CSize];
+    for (int j = 0; j < size; j++)
+    {
+        if (centipedeptr[centipede_n][j][x] == Position[x] && centipedeptr[centipede_n][j][y] == Position[y])
+        {
+            return j;
+        }
+    }
+    return -1;
 }
