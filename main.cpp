@@ -16,7 +16,7 @@ const int boxPixelsY = 32;                        // Pixels Per Box Y
 const int gameRows = resolutionY / boxPixelsY;    // Total Rows
 const int gameColumns = resolutionX / boxPixelsX; // Total Columns
 
-const int MAX_LASERS = 50;           // Max Number of Bullets
+const int MAX_LASERS = 3;            // Max Number of Bullets
 const int MAX_MASHROOMS = 30;        // Max Number of Mushrooms
 const int MAX_CENTEPEDE_LENGTH = 12; // Max Centepede Length
 /*
@@ -70,10 +70,10 @@ void MovePlayer(int player[], int direction);                                // 
 
 void SpawnLaser(float Lasers[][3], const int player[], Sprite LaserSprites[], Texture &LaserTexture); // Spawn a single bullet
 void RenderLasers(RenderWindow &window, float Lasers[][3], Sprite LaserSprite[]);                     // Render Bullet
-void MoveLasers(float Laser[][3], int *&MushroomsPtr, int ***&CentipedePtr, int &centipedes_count);   // Control Bullet Movement
+bool MoveLasers(float Laser[][3], int *&MushroomsPtr, int ***&CentipedePtr, int &centipedes_count);   // Control Bullet Movement
 
-void GenerateMushrooms(Sprite MushroomSprites[], Texture &MushroomTexture, int *&Mushrooms);
-void RenderMushrooms(RenderWindow &Window, Sprite MushroomSprites[], int *&Mushrooms);
+void GenerateMushrooms(int *&Mushrooms);
+void RenderMushrooms(RenderWindow &Window, Texture &MushroomTexture, int *&Mushrooms);
 void DestructMushroom(int Position[], int *&MushroomsPtr);
 void DestroyMushroom(int Position[], int *&MushroomsPtr);
 int GetMushroom(int Position[], int *Mushroomsptr);
@@ -138,6 +138,7 @@ int main()
     int ***centepede_ptr = new int **[centepedes_count];
 
     float Lasers[MAX_LASERS][3]{};
+    bool LaserShoted = false;
     Sprite LaserSprites[MAX_LASERS]{};
     Texture LaserTexture;
     LaserTexture.loadFromFile("Textures/bullet.png");
@@ -145,7 +146,6 @@ int main()
 
     int MushroomsCount = 0;
     int *MushroomsPtr = NULL;
-    Sprite MushroomSprites[MAX_MASHROOMS]{};
     Texture MushroomTexture;
     MushroomTexture.loadFromFile("Textures/mushroom.png");
 
@@ -153,7 +153,7 @@ int main()
         Initialization
     */
     GenerateCentipede(centepede_ptr, 10, Position, LEFT, centepedes_count);
-    GenerateMushrooms(MushroomSprites, MushroomTexture, MushroomsPtr);
+    GenerateMushrooms(MushroomsPtr);
 
     /*
         Clocks
@@ -203,6 +203,7 @@ int main()
         {
             if (Keyboard::isKeyPressed(Keyboard::Z))
             {
+                LaserShoted = true;
                 SpawnLaser(Lasers, Player, LaserSprites, LaserTexture);
                 LaserClock.restart();
             }
@@ -213,9 +214,13 @@ int main()
                 - Lasers
                 - Centepede
         */
-        MoveLasers(Lasers, MushroomsPtr, centepede_ptr, centepedes_count);
+        if (LaserShoted)
+        {
+            if (MoveLasers(Lasers, MushroomsPtr, centepede_ptr, centepedes_count) == false)
+                LaserShoted = false;
+        }
 
-        system("clear");
+        /* system("clear");
         for (int i = 0; i < gameRows; i++)
         {
             for (int j = 0; j < gameColumns; j++)
@@ -224,7 +229,7 @@ int main()
             }
             cout << "\n";
         }
-        cout << endl;
+        cout << endl; */
 
         /*
             -> Render Objects
@@ -233,7 +238,7 @@ int main()
         RenderPlayer(window, Player, PlayerSprite);
         RenderCentepedes(window, CentepedeTexture_HEAD, CentepedeTexture_BODY, centepede_ptr, centepedes_count);
         RenderLasers(window, Lasers, LaserSprites);
-        RenderMushrooms(window, MushroomSprites, MushroomsPtr);
+        RenderMushrooms(window, MushroomTexture, MushroomsPtr);
         /*
              Refresh Frame
         */
@@ -335,15 +340,17 @@ void RenderLasers(RenderWindow &window, float Lasers[][3], Sprite LaserSprite[])
         }
     }
 }
-void MoveLasers(float Laser[][3], int *&MushroomsPtr, int ***&CentipedePtr, int &centipedes_count)
+bool MoveLasers(float Laser[][3], int *&MushroomsPtr, int ***&CentipedePtr, int &centipedes_count)
 {
+    bool lasers_in_motion = false;
     for (int i = 0; i < MAX_LASERS; i++)
     {
         if (Laser[i][exists] == true)
         {
+            lasers_in_motion = true;
             int Position[] = {int(Laser[i][x]), int(ceil(Laser[i][y]))};
             UpdateGrid(Position[x], Position[y], ONone);
-            Laser[i][y] -= 50 * delta;
+            Laser[i][y] -= 35 * delta;
             if (Laser[i][y] < -1)
                 Laser[i][exists] = false;
             else if (Laser[i][y] > -1)
@@ -382,8 +389,6 @@ void MoveLasers(float Laser[][3], int *&MushroomsPtr, int ***&CentipedePtr, int 
                                 Position[x] -= size;
                             GenerateCentipede(CentipedePtr, size - body_index, Position, (Direction == LEFT) ? (RIGHT) : (LEFT), centipedes_count);
                         }
-                        else
-                            cout << "HEADSHOT" << endl;
                     }
                     break;
                     }
@@ -392,6 +397,7 @@ void MoveLasers(float Laser[][3], int *&MushroomsPtr, int ***&CentipedePtr, int 
             }
         }
     }
+    return lasers_in_motion;
 }
 void DestructMushroom(int Position[], int *&MushroomsPtr)
 {
@@ -405,7 +411,7 @@ void DestroyMushroom(int Position[], int *&MushroomsPtr)
     *(MushroomsPtr + GetMushroom(Position, MushroomsPtr) + health) = 0;
     UpdateGrid(Position[x], Position[y], ONone);
 }
-void GenerateMushrooms(Sprite MushroomSprites[], Texture &MushroomTexture, int *&Mushrooms)
+void GenerateMushrooms(int *&Mushrooms)
 {
     srand(time(0));
     MushroomsCount = (rand() % 11) + 20;
@@ -418,8 +424,6 @@ void GenerateMushrooms(Sprite MushroomSprites[], Texture &MushroomTexture, int *
         if (gameGrid[Grid_Y][Grid_X] == ONone)
         {
             UpdateGrid(Grid_X, Grid_Y, OMushroom);
-            MushroomSprites[i].setTexture(MushroomTexture);
-            MushroomSprites[i].setTextureRect(IntRect(0, boxPixelsX, boxPixelsX, boxPixelsY));
             *(Mushrooms + x + i * 3) = Grid_X;
             *(Mushrooms + y + i * 3) = Grid_Y;
             *(Mushrooms + health + i * 3) = 2;
@@ -428,16 +432,22 @@ void GenerateMushrooms(Sprite MushroomSprites[], Texture &MushroomTexture, int *
             i--;
     }
 }
-void RenderMushrooms(RenderWindow &Window, Sprite MushroomSprites[], int *&Mushrooms)
+void RenderMushrooms(RenderWindow &Window, Texture &MushroomTexture, int *&Mushrooms)
 {
     for (int i = 0; i < MushroomsCount; i++)
     {
         if (*(Mushrooms + health + i * 3) != 0)
         {
+            Sprite mushroom;
+            mushroom.setTexture(MushroomTexture);
+
             if (*(Mushrooms + i * 3 + health) == 1)
-                MushroomSprites[i].setTextureRect(IntRect(boxPixelsX, boxPixelsX, boxPixelsX, boxPixelsY));
-            MushroomSprites[i].setPosition(*(Mushrooms + x + i * 3) * boxPixelsX, *(Mushrooms + y + i * 3) * boxPixelsY);
-            Window.draw(MushroomSprites[i]);
+                mushroom.setTextureRect(IntRect(boxPixelsX, boxPixelsX, boxPixelsX, boxPixelsY));
+            else
+                mushroom.setTextureRect(IntRect(0, boxPixelsX, boxPixelsX, boxPixelsY));
+
+            mushroom.setPosition(*(Mushrooms + x + i * 3) * boxPixelsX, *(Mushrooms + y + i * 3) * boxPixelsY);
+            Window.draw(mushroom);
         }
     }
 }
@@ -611,11 +621,6 @@ void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&mushroom_
         }
         if (PreviousObject == OMushroom || UpdateGrid(Position[x], Position[y], OCentepede, collided_object, P_direction))
         {
-            if (collided_object == OWalls)
-            {
-                if (PreviousObject == OMushroom)
-                    DestroyMushroom(Position, mushroom_ptr);
-            }
             if (collided_object != OCentepede)
             {
                 if (PreviousObject == OMushroom)
@@ -630,15 +635,10 @@ void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&mushroom_
                 {
                     centepede_ptr[i][0][TDirection] = DOWN;
                 }
-                switch (centepede_ptr[i][0][TDirection])
-                {
-                case DOWN:
+                if (centepede_ptr[i][0][TDirection] == DOWN)
                     centepede_ptr[i][0][y] += step_size;
-                    break;
-                case UP:
+                else
                     centepede_ptr[i][0][y] -= step_size;
-                    break;
-                }
                 P_direction = centepede_ptr[i][0][CDirection];
                 return;
             }
