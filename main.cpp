@@ -603,6 +603,7 @@ void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&mushroom_
     const int step_size = 1;
     for (int i = 0; i < centepedes_count; i++)
     {
+        bool direction_changed = false;
         int collided_object = 0;
         int size = centepede_ptr[i][0][CSize];
         int P_direction = centepede_ptr[i][0][CDirection];
@@ -640,20 +641,25 @@ void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&mushroom_
                 else
                     centepede_ptr[i][0][y] -= step_size;
                 P_direction = centepede_ptr[i][0][CDirection];
-                return;
+                direction_changed = true;
             }
         }
+        /*
+            Below Lines are coded intentionally to match the speed of each centipede
+        */
         UpdateGrid(centepede_ptr[i][0][x], centepede_ptr[i][0][y], ONone);
-        switch (P_direction)
+        if (!direction_changed)
         {
-        case LEFT:
-            centepede_ptr[i][0][x] -= step_size;
-            break;
-        case RIGHT:
-            centepede_ptr[i][0][x] += step_size;
+            if (P_direction == LEFT)
+                centepede_ptr[i][0][x] -= step_size;
+            else
+                centepede_ptr[i][0][x] += step_size;
         }
         for (int j = 0; j < size; j++)
-            UpdateGrid(centepede_ptr[i][j][x], centepede_ptr[i][j][y], OCentepede);
+        {
+            if (!direction_changed)
+                UpdateGrid(centepede_ptr[i][j][x], centepede_ptr[i][j][y], OCentepede);
+        }
     }
 }
 int GetCentipede(int ***&centipedeptr, int centipedes_count, int Position[])
