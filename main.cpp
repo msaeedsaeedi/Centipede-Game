@@ -83,7 +83,7 @@ void HandlePlayer(int player[2]); // Handle KeyBoard Inputs
 bool UpdateGrid(int Grid_x, int Grid_y, int object);
 bool UpdateGrid(int Grid_x, int Grid_y, int object, int &collidedObject, int Direction);
 
-void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int Direction, int &centepedes_count);
+void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int Direction, int T_Direction, int &centepedes_count);
 void DeleteCentepede(int ***&centepede_ptr, int n, int &centepedes_count);
 void RenderCentepedes(RenderWindow &Window, Texture CentepedeTexture_HEAD, Texture CentepedeTexture_BODY, int ***&centepede_ptr, int centepedes_count);
 void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&MushroomsPtr);
@@ -152,7 +152,7 @@ int main()
     /*
         Initialization
     */
-    GenerateCentipede(centepede_ptr, 10, Position, LEFT, centepedes_count);
+    GenerateCentipede(centepede_ptr, 10, Position, LEFT, DOWN, centepedes_count);
     GenerateMushrooms(MushroomsPtr);
 
     /*
@@ -375,6 +375,7 @@ bool MoveLasers(float Laser[][3], int *&MushroomsPtr, int ***&CentipedePtr, int 
                         if (body_index == -1)
                             break;
                         int Direction = CentipedePtr[centipede_n][0][CDirection];
+                        int T_Direction = CentipedePtr[centipede_n][0][TDirection];
                         DeleteCentepede(CentipedePtr, centipede_n, centipedes_count);
                         if (body_index != 0)
                         {
@@ -382,12 +383,12 @@ bool MoveLasers(float Laser[][3], int *&MushroomsPtr, int ***&CentipedePtr, int 
                                 Position[x] -= body_index;
                             else
                                 Position[x] += body_index;
-                            GenerateCentipede(CentipedePtr, body_index, Position, Direction, centipedes_count);
+                            GenerateCentipede(CentipedePtr, body_index, Position, Direction, T_Direction, centipedes_count);
                             if (Direction == LEFT)
                                 Position[x] += size;
                             else
                                 Position[x] -= size;
-                            GenerateCentipede(CentipedePtr, size - body_index, Position, (Direction == LEFT) ? (RIGHT) : (LEFT), centipedes_count);
+                            GenerateCentipede(CentipedePtr, size - body_index, Position, (Direction == LEFT) ? (RIGHT) : (LEFT), T_Direction, centipedes_count);
                         }
                     }
                     break;
@@ -508,7 +509,7 @@ bool UpdateGrid(int Grid_x, int Grid_y, int object, int &collidedObject, int Dir
     return false;
 }
 
-void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int Direction, int &centepedes_count)
+void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int Direction, int T_Direction, int &centepedes_count)
 {
     centepedes_count++;
     int ***D_temp = 0;
@@ -526,7 +527,7 @@ void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int Dire
     *(centepede_ptr[centepedes_count - 1][0] + x) = Position[x];
     *(centepede_ptr[centepedes_count - 1][0] + y) = Position[y];
     *(centepede_ptr[centepedes_count - 1][0] + CDirection) = Direction;
-    *(centepede_ptr[centepedes_count - 1][0] + TDirection) = DOWN;
+    *(centepede_ptr[centepedes_count - 1][0] + TDirection) = T_Direction;
     UpdateGrid(Position[x], Position[y], OCentepede);
     for (int j = 1; j < size; j++)
     {
@@ -647,7 +648,8 @@ void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&mushroom_
         /*
             Below Lines are coded intentionally to match the speed of each centipede
         */
-        UpdateGrid(centepede_ptr[i][0][x], centepede_ptr[i][0][y], ONone);
+        if (!direction_changed)
+            UpdateGrid(centepede_ptr[i][0][x], centepede_ptr[i][0][y], ONone);
         if (!direction_changed)
         {
             if (P_direction == LEFT)
