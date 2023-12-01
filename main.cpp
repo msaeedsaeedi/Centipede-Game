@@ -9,12 +9,13 @@ using std::cout, std::endl;
 /*
  ** Constant Declerations **
  */
-const int resolutionX = 960;                      // X Resolution
-const int resolutionY = 960;                      // Y Resolution
-const int boxPixelsX = 32;                        // Pixels Per Box X
-const int boxPixelsY = 32;                        // Pixels Per Box Y
-const int gameRows = resolutionY / boxPixelsY;    // Total Rows
-const int gameColumns = resolutionX / boxPixelsX; // Total Columns
+const int resolutionX = 960;  // X Resolution
+const int resolutionY = 1088; // Y Resolution
+const int OFFSET = 4;         // Play Area Offset From top (Grid Cols)
+const int boxPixelsX = 32;    // Pixels Per Box X
+const int boxPixelsY = 32;    // Pixels Per Box Y
+const int gameRows = 30;      // Total Rows
+const int gameColumns = 30;   // Total Columns
 
 const int MAX_LASERS = 3;            // Max Number of Bullets
 const int MAX_MASHROOMS = 30;        // Max Number of Mushrooms
@@ -96,8 +97,8 @@ int main()
         Window Setup
     */
     RenderWindow window(VideoMode(resolutionX, resolutionY), "Centipede", Style::Close | Style::Titlebar);
-    window.setSize(Vector2u(640, 640));
-    window.setPosition(Vector2i(400, 50));
+    window.setSize(Vector2u(600, 680));
+    window.setPosition(Vector2i(400, 0));
 
     /*
         Setup Objects For Rendering
@@ -109,7 +110,6 @@ int main()
     Sprite BackgroundSprite;
     BackgroundTexture.loadFromFile("Textures/background.png");
     BackgroundSprite.setTexture(BackgroundTexture);
-    BackgroundSprite.setColor(Color(255, 255, 255, 255 * 0.25));
 
     Texture PlayerTexture;
     Sprite PlayerSprite;
@@ -312,7 +312,7 @@ void MovePlayer(int player[], int direction)
 }
 void RenderPlayer(RenderWindow &window, int player[], Sprite &playersprite)
 {
-    playersprite.setPosition(player[x] * boxPixelsX, player[y] * boxPixelsY);
+    playersprite.setPosition(player[x] * boxPixelsX, (player[y] + OFFSET) * boxPixelsY);
     window.draw(playersprite);
 }
 void SpawnLaser(float Lasers[][3], const int player[], Sprite LaserSprites[], Texture &LaserTexture)
@@ -335,7 +335,7 @@ void RenderLasers(RenderWindow &window, float Lasers[][3], Sprite LaserSprite[])
     {
         if (Lasers[i][exists] == true)
         {
-            LaserSprite[i].setPosition(Lasers[i][x] * boxPixelsX, Lasers[i][y] * boxPixelsY);
+            LaserSprite[i].setPosition(Lasers[i][x] * boxPixelsX, (Lasers[i][y] + OFFSET) * boxPixelsY);
             window.draw(LaserSprite[i]);
         }
     }
@@ -351,7 +351,7 @@ bool MoveLasers(float Laser[][3], int *&MushroomsPtr, int ***&CentipedePtr, int 
             int Position[] = {int(Laser[i][x]), int(ceil(Laser[i][y]))};
             UpdateGrid(Position[x], Position[y], ONone);
             Laser[i][y] -= 35 * delta;
-            if (Laser[i][y] < -1)
+            if (Laser[i][y] < 0)
                 Laser[i][exists] = false;
             else if (Laser[i][y] > -1)
             {
@@ -447,7 +447,7 @@ void RenderMushrooms(RenderWindow &Window, Texture &MushroomTexture, int *&Mushr
             else
                 mushroom.setTextureRect(IntRect(0, boxPixelsX, boxPixelsX, boxPixelsY));
 
-            mushroom.setPosition(*(Mushrooms + x + i * 3) * boxPixelsX, *(Mushrooms + y + i * 3) * boxPixelsY);
+            mushroom.setPosition(*(Mushrooms + x + i * 3) * boxPixelsX, (*(Mushrooms + y + i * 3) + OFFSET) * boxPixelsY);
             Window.draw(mushroom);
         }
     }
@@ -579,7 +579,7 @@ void RenderCentepedes(RenderWindow &Window, Texture CentepedeTexture_HEAD, Textu
             int Y = (centepede_ptr[i][0][y]);
             head.setTexture(CentepedeTexture_HEAD);
             head.setTextureRect(IntRect(0, 0, boxPixelsX, boxPixelsY));
-            head.setPosition(X * boxPixelsX, Y * boxPixelsY);
+            head.setPosition(X * boxPixelsX, (Y + OFFSET) * boxPixelsY);
             if (centepede_ptr[i][0][CDirection] == RIGHT)
                 head.setOrigin(boxPixelsX, boxPixelsY), head.setRotation(180);
             Window.draw(head);
@@ -592,7 +592,7 @@ void RenderCentepedes(RenderWindow &Window, Texture CentepedeTexture_HEAD, Textu
             int Y = (centepede_ptr[i][j][y]);
             sm.setTexture(CentepedeTexture_BODY);
             sm.setTextureRect(IntRect(0, 0, boxPixelsX, boxPixelsY));
-            sm.setPosition(X * boxPixelsX, Y * boxPixelsY);
+            sm.setPosition(X * boxPixelsX, (Y + OFFSET) * boxPixelsY);
             if (centepede_ptr[i][j][CDirection] == RIGHT)
                 sm.setOrigin(boxPixelsX, boxPixelsY), sm.setRotation(180);
             Window.draw(sm);
