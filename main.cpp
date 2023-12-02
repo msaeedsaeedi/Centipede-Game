@@ -94,6 +94,8 @@ void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&Mushrooms
 int GetCentipede(int ***&centipedeptr, int centipedes_count, int Position[]);
 int GetCentipedeBodyIndex(int ***&centipedeptr, int centipede_n, int Position[]);
 
+void UpdateScore(Text &T_Score, int &Score, int Increase);
+
 int main()
 {
     /*
@@ -125,34 +127,15 @@ int main()
     CentepedeTexture_BODY.loadFromFile("Textures/c_body_left_walk.png");
 
     /*
-        Text to Display
-    */
-    Font myfont;
-    Text T_Level, T_Score, T_HScore;
-    myfont.loadFromFile("Fonts/BebasNeue-Regular.ttf");
-    // Display Level
-    T_Level.setFont(myfont);
-    T_Level.setString("1");
-    T_Level.setCharacterSize(48);
-    T_Level.setPosition(900, 35);
-    // Display Score
-    T_Score.setFont(myfont);
-    T_Score.setString("SCORE : 0000");
-    T_Score.setCharacterSize(48);
-    T_Score.setPosition(40, 35);
-    // // High Score
-    // T_HScore.setFont(myfont);
-    // T_HScore.setString("HIGH SCORE : 1000");
-    // T_HScore.setCharacterSize(28);
-    // T_HScore.setPosition(768, 28);
-
-    /*
         Setup Data
+            - Score
             - Player
             - Centepede
             - Lasers
             - Mushrooms
     */
+    int Score = 0;
+
     int Player[2]{};
     Player[x] = (gameColumns / 2);
     Player[y] = (gameRows - 5);
@@ -176,6 +159,25 @@ int main()
     int *MushroomsPtr = NULL;
     Texture MushroomTexture;
     MushroomTexture.loadFromFile("Textures/mushroom.png");
+
+    /*
+        Text to Display
+    */
+    Font myfont;
+    Text T_Level, T_Score;
+    myfont.loadFromFile("Fonts/BebasNeue-Regular.ttf");
+
+    // Display Level
+    T_Level.setFont(myfont);
+    T_Level.setString("1");
+    T_Level.setCharacterSize(48);
+    T_Level.setPosition(900, 35);
+    
+    // Display Score
+    T_Score.setFont(myfont);
+    T_Score.setCharacterSize(48);
+    UpdateScore(T_Score, Score, 0);
+    T_Score.setPosition(40, 35);
 
     /*
         Initialization
@@ -779,4 +781,16 @@ int GetCentipedeBodyIndex(int ***&centipedeptr, int centipede_n, int Position[])
         }
     }
     return -1;
+}
+void UpdateScore(Text &T_Score, int &Score, int Increase)
+{
+    char C_Score[20] = "Score : ";
+    Score = Score + Increase;
+    int TEMP = Score;
+    for (int i = 0; i < 4; i++)
+    {
+        C_Score[i + 8] = (TEMP / pow(10, 3 - i)) + 48;
+        TEMP %= static_cast<int>(pow(10, 3 - i));
+    }
+    T_Score.setString(C_Score);
 }
