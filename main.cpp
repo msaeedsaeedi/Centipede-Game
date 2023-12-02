@@ -420,38 +420,45 @@ bool MoveLasers(float Laser[][3], int *&MushroomsPtr, int ***&CentipedePtr, int 
                             break;
                         int Direction = CentipedePtr[centipede_n][0][CDirection];
                         int T_Direction = CentipedePtr[centipede_n][0][TDirection];
-                        int **PreviousDataP1 = new int *[body_index];
-                        int **PreviousDataP2 = new int *[size - body_index];
-                        for (int l = 0; l < body_index; l++)
+                        if (body_index == 0)
                         {
-                            PreviousDataP1[l] = new int[CentipedeBodyDataSize];
-                            PreviousDataP1[l][x] = CentipedePtr[centipede_n][l][x];
-                            PreviousDataP1[l][y] = CentipedePtr[centipede_n][l][y];
-                            PreviousDataP1[l][CDirection] = CentipedePtr[centipede_n][l][CDirection];
+                            DeleteCentepede(CentipedePtr, centipede_n, centipedes_count);
+                            UpdateScore(20, C_Score);
                         }
-                        for (int l = 0; l < size - body_index; l++)
+                        else
                         {
-                            PreviousDataP2[l] = new int[CentipedeBodyDataSize];
-                            PreviousDataP2[l][x] = CentipedePtr[centipede_n][l + body_index][x];
-                            PreviousDataP2[l][y] = CentipedePtr[centipede_n][l + body_index][y];
-                            PreviousDataP2[l][CDirection] = CentipedePtr[centipede_n][l + body_index][CDirection];
-                        }
-                        DeleteCentepede(CentipedePtr, centipede_n, centipedes_count);
-                        if (body_index != 0)
-                        {
+                            UpdateScore(10, C_Score);
+                            int **PreviousDataP1 = new int *[body_index - 1];
+                            int **PreviousDataP2 = new int *[size - body_index];
+                            for (int l = 0; l < body_index - 1; l++)
+                            {
+                                PreviousDataP1[l] = new int[CentipedeBodyDataSize];
+                                PreviousDataP1[l][x] = CentipedePtr[centipede_n][l][x];
+                                PreviousDataP1[l][y] = CentipedePtr[centipede_n][l][y];
+                                PreviousDataP1[l][CDirection] = CentipedePtr[centipede_n][l][CDirection];
+                            }
+                            for (int l = 0; l < size - body_index; l++)
+                            {
+                                PreviousDataP2[l] = new int[CentipedeBodyDataSize];
+                                PreviousDataP2[l][x] = CentipedePtr[centipede_n][l + body_index][x];
+                                PreviousDataP2[l][y] = CentipedePtr[centipede_n][l + body_index][y];
+                                PreviousDataP2[l][CDirection] = CentipedePtr[centipede_n][l + body_index][CDirection];
+                            }
+                            DeleteCentepede(CentipedePtr, centipede_n, centipedes_count);
                             Position[x] += (Direction == LEFT) ? (-body_index) : (body_index);
-                            GenerateCentipede(CentipedePtr, body_index, Position, Direction, T_Direction, centipedes_count, PreviousDataP1);
+                            GenerateCentipede(CentipedePtr, body_index - 1, Position, Direction, T_Direction, centipedes_count, PreviousDataP1);
                             Position[x] += (Direction == LEFT) ? (body_index) : (-body_index);
                             GenerateCentipede(CentipedePtr, size - body_index, Position, Direction, T_Direction, centipedes_count, PreviousDataP2, true);
                             UpdateGrid(Position[x], Position[y], ONone);
+
+                            // Freeing Memory
+                            for (int l = 0; l < body_index - 1; l++)
+                                delete[] PreviousDataP1[l];
+                            delete[] PreviousDataP1;
+                            for (int l = 0; l < size - body_index; l++)
+                                delete[] PreviousDataP2[l];
+                            delete[] PreviousDataP2;
                         }
-                        // Freeing Memory
-                        for (int l = 0; l < body_index; l++)
-                            delete[] PreviousDataP1[l];
-                        delete[] PreviousDataP1;
-                        for (int l = 0; l < size - body_index; l++)
-                            delete[] PreviousDataP2[l];
-                        delete[] PreviousDataP2;
                     }
                     break;
                     }
