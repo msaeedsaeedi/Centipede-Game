@@ -542,12 +542,12 @@ void RenderMushrooms(RenderWindow &Window, Texture &MushroomTexture, int **&Mush
         {
             Sprite mushroom;
             mushroom.setTexture(MushroomTexture);
-
+            int TextureTop = 0, TextureLeft = 0;
+            if (Mushrooms_Ptr[i][MType] == MDefault)
+                TextureTop = boxPixelsY;
             if (Mushrooms_Ptr[i][health] == 1)
-                mushroom.setTextureRect(IntRect(boxPixelsX, boxPixelsX, boxPixelsX, boxPixelsY));
-            else
-                mushroom.setTextureRect(IntRect(0, boxPixelsX, boxPixelsX, boxPixelsY));
-
+                TextureLeft = boxPixelsX;
+            mushroom.setTextureRect(IntRect(TextureLeft, TextureTop, boxPixelsX, boxPixelsY));
             mushroom.setPosition(Mushrooms_Ptr[i][x] * boxPixelsX, (Mushrooms_Ptr[i][y] + OFFSET) * boxPixelsY);
             Window.draw(mushroom);
         }
