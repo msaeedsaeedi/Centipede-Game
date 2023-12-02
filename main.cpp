@@ -20,6 +20,9 @@ const int gameColumns = 30;   // Total Columns
 const int MAX_LASERS = 3;            // Max Number of Bullets
 const int MAX_MASHROOMS = 30;        // Max Number of Mushrooms
 const int MAX_CENTEPEDE_LENGTH = 12; // Max Centepede Length
+const int CentipedeHeadDataSize = 5;
+const int CentipedeBodyDataSize = 3;
+
 /*
     ** Readability **
         - General
@@ -84,7 +87,7 @@ void HandlePlayer(int player[2]); // Handle KeyBoard Inputs
 bool UpdateGrid(int Grid_x, int Grid_y, int object);
 bool UpdateGrid(int Grid_x, int Grid_y, int object, int &collidedObject, int Direction);
 
-void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int Direction, int T_Direction, int &centepedes_count);
+void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int Direction, int T_Direction, int &centepedes_count, int **PreviousBody = nullptr, bool SplitDown = false);
 void DeleteCentepede(int ***&centepede_ptr, int n, int &centepedes_count);
 void RenderCentepedes(RenderWindow &Window, Texture CentepedeTexture_HEAD, Texture CentepedeTexture_BODY, int ***&centepede_ptr, int centepedes_count);
 void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&MushroomsPtr);
@@ -120,6 +123,29 @@ int main()
     Texture CentepedeTexture_BODY;
     CentepedeTexture_HEAD.loadFromFile("Textures/c_head_left_walk.png");
     CentepedeTexture_BODY.loadFromFile("Textures/c_body_left_walk.png");
+
+    /*
+        Text to Display
+    */
+    Font myfont;
+    Text T_Level, T_Score, T_HScore;
+    myfont.loadFromFile("Fonts/BebasNeue-Regular.ttf");
+    // Display Level
+    T_Level.setFont(myfont);
+    T_Level.setString("1");
+    T_Level.setCharacterSize(48);
+    T_Level.setPosition(900, 35);
+    // Display Score
+    T_Score.setFont(myfont);
+    T_Score.setString("SCORE : 0000");
+    T_Score.setCharacterSize(48);
+    T_Score.setPosition(40, 35);
+    // // High Score
+    // T_HScore.setFont(myfont);
+    // T_HScore.setString("HIGH SCORE : 1000");
+    // T_HScore.setCharacterSize(28);
+    // T_HScore.setPosition(768, 28);
+
     /*
         Setup Data
             - Player
@@ -235,6 +261,9 @@ int main()
             -> Render Objects
         */
         window.draw(BackgroundSprite);
+        window.draw(T_Level);
+        window.draw(T_Score);
+        // window.draw(T_HScore);
         RenderPlayer(window, Player, PlayerSprite);
         RenderCentepedes(window, CentepedeTexture_HEAD, CentepedeTexture_BODY, centepede_ptr, centepedes_count);
         RenderLasers(window, Lasers, LaserSprites);
@@ -351,7 +380,7 @@ bool MoveLasers(float Laser[][3], int *&MushroomsPtr, int ***&CentipedePtr, int 
             int Position[] = {int(Laser[i][x]), int(ceil(Laser[i][y]))};
             UpdateGrid(Position[x], Position[y], ONone);
             Laser[i][y] -= 35 * delta;
-            if (Laser[i][y] < 0)
+            if (Laser[i][y] < -1)
                 Laser[i][exists] = false;
             else if (Laser[i][y] > -1)
             {
@@ -376,20 +405,38 @@ bool MoveLasers(float Laser[][3], int *&MushroomsPtr, int ***&CentipedePtr, int 
                             break;
                         int Direction = CentipedePtr[centipede_n][0][CDirection];
                         int T_Direction = CentipedePtr[centipede_n][0][TDirection];
+                        int **PreviousDataP1 = new int *[body_index];
+                        int **PreviousDataP2 = new int *[size - body_index];
+                        for (int l = 0; l < body_index; l++)
+                        {
+                            PreviousDataP1[l] = new int[CentipedeBodyDataSize];
+                            PreviousDataP1[l][x] = CentipedePtr[centipede_n][l][x];
+                            PreviousDataP1[l][y] = CentipedePtr[centipede_n][l][y];
+                            PreviousDataP1[l][CDirection] = CentipedePtr[centipede_n][l][CDirection];
+                        }
+                        for (int l = 0; l < size - body_index; l++)
+                        {
+                            PreviousDataP2[l] = new int[CentipedeBodyDataSize];
+                            PreviousDataP2[l][x] = CentipedePtr[centipede_n][l + body_index][x];
+                            PreviousDataP2[l][y] = CentipedePtr[centipede_n][l + body_index][y];
+                            PreviousDataP2[l][CDirection] = CentipedePtr[centipede_n][l + body_index][CDirection];
+                        }
                         DeleteCentepede(CentipedePtr, centipede_n, centipedes_count);
                         if (body_index != 0)
                         {
-                            if (Direction == LEFT)
-                                Position[x] -= body_index;
-                            else
-                                Position[x] += body_index;
-                            GenerateCentipede(CentipedePtr, body_index, Position, Direction, T_Direction, centipedes_count);
-                            if (Direction == LEFT)
-                                Position[x] += size;
-                            else
-                                Position[x] -= size;
-                            GenerateCentipede(CentipedePtr, size - body_index, Position, (Direction == LEFT) ? (RIGHT) : (LEFT), T_Direction, centipedes_count);
+                            Position[x] += (Direction == LEFT) ? (-body_index) : (body_index);
+                            GenerateCentipede(CentipedePtr, body_index, Position, Direction, T_Direction, centipedes_count, PreviousDataP1);
+                            Position[x] += (Direction == LEFT) ? (body_index) : (-body_index);
+                            GenerateCentipede(CentipedePtr, size - body_index, Position, Direction, T_Direction, centipedes_count, PreviousDataP2, true);
+                            UpdateGrid(Position[x], Position[y], ONone);
                         }
+                        // Freeing Memory
+                        for (int l = 0; l < body_index; l++)
+                            delete[] PreviousDataP1[l];
+                        delete[] PreviousDataP1;
+                        for (int l = 0; l < size - body_index; l++)
+                            delete[] PreviousDataP2[l];
+                        delete[] PreviousDataP2;
                     }
                     break;
                     }
@@ -509,7 +556,7 @@ bool UpdateGrid(int Grid_x, int Grid_y, int object, int &collidedObject, int Dir
     return false;
 }
 
-void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int Direction, int T_Direction, int &centepedes_count)
+void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int Direction, int T_Direction, int &centepedes_count, int **PreviousBody, bool SplitDown)
 {
     centepedes_count++;
     int ***D_temp = 0;
@@ -524,21 +571,45 @@ void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int Dire
     centepede_ptr[centepedes_count - 1] = new int *[size];
     centepede_ptr[centepedes_count - 1][0] = new int[5];
     *(centepede_ptr[centepedes_count - 1][0] + CSize) = size;
-    *(centepede_ptr[centepedes_count - 1][0] + x) = Position[x];
-    *(centepede_ptr[centepedes_count - 1][0] + y) = Position[y];
-    *(centepede_ptr[centepedes_count - 1][0] + CDirection) = Direction;
+    if (!SplitDown)
+    {
+        *(centepede_ptr[centepedes_count - 1][0] + x) = Position[x];
+        *(centepede_ptr[centepedes_count - 1][0] + y) = Position[y];
+        *(centepede_ptr[centepedes_count - 1][0] + CDirection) = Direction;
+    }
+    else
+    {
+        *(centepede_ptr[centepedes_count - 1][0] + x) = Position[x] + ((Direction == LEFT) ? (1) : (-1));
+        *(centepede_ptr[centepedes_count - 1][0] + y) = Position[y] + 1;
+        *(centepede_ptr[centepedes_count - 1][0] + CDirection) = (Direction == LEFT) ? (RIGHT) : (LEFT);
+    }
     *(centepede_ptr[centepedes_count - 1][0] + TDirection) = T_Direction;
     UpdateGrid(Position[x], Position[y], OCentepede);
     for (int j = 1; j < size; j++)
     {
         centepede_ptr[centepedes_count - 1][j] = new int[3];
-        if (Direction == LEFT)
-            *(centepede_ptr[centepedes_count - 1][j] + x) = Position[x] + j;
+        if (PreviousBody == nullptr)
+        {
+            *(centepede_ptr[centepedes_count - 1][j] + y) = Position[y];
+            *(centepede_ptr[centepedes_count - 1][j] + CDirection) = Direction;
+            if (Direction == LEFT)
+            {
+                *(centepede_ptr[centepedes_count - 1][j] + x) = Position[x] + j;
+                UpdateGrid(Position[x] + j, Position[y], OCentepede);
+            }
+            else
+            {
+                *(centepede_ptr[centepedes_count - 1][j] + x) = Position[x] - j;
+                UpdateGrid(Position[x] - j, Position[y], OCentepede);
+            }
+        }
         else
-            *(centepede_ptr[centepedes_count - 1][j] + x) = Position[x] - j;
-        *(centepede_ptr[centepedes_count - 1][j] + y) = Position[y];
-        *(centepede_ptr[centepedes_count - 1][j] + CDirection) = Direction;
-        UpdateGrid(Position[x] + j, Position[y], OCentepede);
+        {
+            *(centepede_ptr[centepedes_count - 1][j] + x) = PreviousBody[j][x];
+            *(centepede_ptr[centepedes_count - 1][j] + y) = PreviousBody[j][y];
+            *(centepede_ptr[centepedes_count - 1][j] + CDirection) = PreviousBody[j][CDirection];
+            UpdateGrid(PreviousBody[j][x], PreviousBody[j][y], OCentepede);
+        }
     }
 }
 
