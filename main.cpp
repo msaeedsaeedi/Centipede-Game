@@ -75,13 +75,15 @@ int gameGrid[gameRows][gameColumns] = {};
 
 void RenderPlayer(RenderWindow &window, int player[], Sprite &playersprite); // Render Player
 void MovePlayer(int player[], int direction);                                // Control Player Movement
+bool isInPlayerArea(int Position[]);
 
 void SpawnLaser(float Lasers[][3], const int player[], Sprite LaserSprites[], Texture &LaserTexture);                                      // Spawn a single bullet
 void RenderLasers(RenderWindow &window, float Lasers[][3], Sprite LaserSprite[]);                                                          // Render Bullet
 bool MoveLasers(float Laser[][3], int **&Mushrooms_Ptr, int &MushroomsCount, int ***&CentipedePtr, int &centipedes_count, char C_Score[]); // Control Bullet Movement
 
-void GenerateMushroom(int **&Mushrooms_Ptr, int &MushroomsCount, int Type);
-// bool GenerateMushroom(int **&Mushrooms_Ptr, int &MushroomsCount, int Type, int Position[]);
+void GenerateMushroom(int **&Mushrooms_Ptr, int &MushroomsCount, int Type, bool ManageHeap = false);
+bool GenerateMushroom(int **&Mushrooms_Ptr, int &MushroomsCount, int Type, int Position[], bool ManageHeap = true);
+
 void GenerateMushrooms(int **&Mushrooms_Ptr, int &MushroomsCount);
 void RenderMushrooms(RenderWindow &Window, Texture &MushroomTexture, int **&Mushrooms_Ptr, int &MushroomsCount);
 void DestructMushroom(int Position[], int **&Mushrooms_Ptr, int &MushroomsCount, char C_Score[]);
@@ -265,7 +267,7 @@ int main()
                 LaserShoted = false;
         }
 
-        system("clear");
+        /* system("clear");
         for (int i = 0; i < gameRows; i++)
         {
             for (int j = 0; j < gameColumns; j++)
@@ -274,7 +276,7 @@ int main()
             }
             cout << "\n";
         }
-        cout << endl;
+        cout << endl; */
 
         T_Score.setString(C_Score);
         T_Level.setString("1");
@@ -307,6 +309,12 @@ void HandlePlayer(int player[2])
         MovePlayer(player, LEFT);
     else if (Keyboard::isKeyPressed(Keyboard::Right))
         MovePlayer(player, RIGHT);
+}
+bool isInPlayerArea(int Position[])
+{
+    if (Position[y] >= (gameRows - 5))
+        return true;
+    return false;
 }
 void MovePlayer(int player[], int direction)
 {
@@ -456,6 +464,8 @@ bool MoveLasers(float Laser[][3], int **&Mushrooms_Ptr, int &MushroomsCount, int
                             Position[x] += (Direction == LEFT) ? (body_index) : (-body_index);
                             GenerateCentipede(CentipedePtr, size - body_index, Position, Direction, T_Direction, centipedes_count, PreviousDataP2, true);
                             UpdateGrid(Position[x], Position[y], ONone);
+                            if (isInPlayerArea(Position))
+                                GenerateMushroom(Mushrooms_Ptr, MushroomsCount, MPoisonous, Position);
 
                             // Freeing Memory
                             for (int l = 0; l < body_index; l++)
@@ -465,8 +475,8 @@ bool MoveLasers(float Laser[][3], int **&Mushrooms_Ptr, int &MushroomsCount, int
                                 delete[] PreviousDataP2[l];
                             delete[] PreviousDataP2;
                         }
+                        break;
                     }
-                    break;
                     }
                     Laser[i][exists] = false;
                 }
@@ -488,7 +498,7 @@ void DestroyMushroom(int Position[], int **&Mushrooms_Ptr, int &MushroomsCount, 
     UpdateGrid(Position[x], Position[y], ONone);
     UpdateScore(1, C_Score);
 }
-void GenerateMushroom(int **&Mushrooms, int &MushroomsCount, int Type)
+void GenerateMushroom(int **&Mushrooms_Ptr, int &MushroomsCount, int Type, bool ManageHeap)
 {
     bool Created = false;
     do
@@ -498,40 +508,63 @@ void GenerateMushroom(int **&Mushrooms, int &MushroomsCount, int Type)
         if (gameGrid[Grid_Y][Grid_X] == ONone)
         {
             MushroomsCount++;
+            if (ManageHeap)
+            {
+                int **temp = new int *[MushroomsCount];
+                for (int i = 0; i < MushroomsCount - 1; i++)
+                {
+                    temp[i] = Mushrooms_Ptr[i];
+                }
+                temp[MushroomsCount - 1] = new int[4];
+                delete[] Mushrooms_Ptr;
+                Mushrooms_Ptr = temp;
+                temp = nullptr;
+            }
             UpdateGrid(Grid_X, Grid_Y, OMushroom);
-            Mushrooms[MushroomsCount - 1][x] = Grid_X;
-            Mushrooms[MushroomsCount - 1][y] = Grid_Y;
-            Mushrooms[MushroomsCount - 1][health] = 2;
-            Mushrooms[MushroomsCount - 1][MType] = Type;
+            Mushrooms_Ptr[MushroomsCount - 1][x] = Grid_X;
+            Mushrooms_Ptr[MushroomsCount - 1][y] = Grid_Y;
+            Mushrooms_Ptr[MushroomsCount - 1][health] = 2;
+            Mushrooms_Ptr[MushroomsCount - 1][MType] = Type;
             Created = true;
         }
     } while (!Created);
 }
-// CHECK AGAIN -> NOT MANAGING HEAP
-/* bool GenerateMushroom(int *&Mushrooms, int &MushroomsCount, int Type, int Position[])
+bool GenerateMushroom(int **&Mushrooms_Ptr, int &MushroomsCount, int Type, int Position[], bool ManageHeap)
 {
     int Grid_X = Position[x];
     int Grid_Y = Position[y];
     if (gameGrid[Grid_Y][Grid_X] == ONone)
     {
         MushroomsCount++;
+        if (ManageHeap)
+        {
+            int **temp = new int *[MushroomsCount];
+            for (int i = 0; i < MushroomsCount - 1; i++)
+            {
+                temp[i] = Mushrooms_Ptr[i];
+            }
+            temp[MushroomsCount - 1] = new int[4];
+            delete[] Mushrooms_Ptr;
+            Mushrooms_Ptr = temp;
+            temp = nullptr;
+        }
         UpdateGrid(Grid_X, Grid_Y, OMushroom);
-        *(Mushrooms + x + (MushroomsCount - 1) * 4) = Grid_X;
-        *(Mushrooms + y + (MushroomsCount - 1) * 4) = Grid_Y;
-        *(Mushrooms + health + (MushroomsCount - 1) * 4) = 2;
-        *(Mushrooms + MType + (MushroomsCount - 1) * 4) = Type;
+        Mushrooms_Ptr[MushroomsCount - 1][x] = Grid_X;
+        Mushrooms_Ptr[MushroomsCount - 1][y] = Grid_Y;
+        Mushrooms_Ptr[MushroomsCount - 1][health] = 2;
+        Mushrooms_Ptr[MushroomsCount - 1][MType] = Type;
         return true;
     }
     return false;
-} */
-void GenerateMushrooms(int **&Mushrooms, int &MushroomsCount)
+}
+void GenerateMushrooms(int **&Mushrooms_Ptr, int &MushroomsCount)
 {
     int RandomCountMushrooms = (rand() % 11) + 20;
-    Mushrooms = new int *[RandomCountMushrooms];
+    Mushrooms_Ptr = new int *[RandomCountMushrooms];
     for (int i = 0; i < RandomCountMushrooms; i++)
     {
-        Mushrooms[i] = new int[4];
-        GenerateMushroom(Mushrooms, MushroomsCount, MDefault);
+        Mushrooms_Ptr[i] = new int[4];
+        GenerateMushroom(Mushrooms_Ptr, MushroomsCount, MDefault);
     }
 }
 void RenderMushrooms(RenderWindow &Window, Texture &MushroomTexture, int **&Mushrooms_Ptr, int &MushroomsCount)
