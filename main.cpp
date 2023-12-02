@@ -9,9 +9,9 @@ using std::cout, std::endl;
 /*
  ** Constant Declerations **
  */
-const int resolutionX = 960;  // X Resolution
-const int resolutionY = 1088; // Y Resolution
-const int OFFSET = 4;         // Play Area Offset From top (Grid Cols)
+const int resolutionX = 960;  // X Resolution -> Ratio (15:17)
+const int resolutionY = 1120; // Y Resolution -> Ratio (15:17)
+const int OFFSET = 5;         // Play Area Offset From top (Grid Cols)
 const int boxPixelsX = 32;    // Pixels Per Box X
 const int boxPixelsY = 32;    // Pixels Per Box Y
 const int gameRows = 30;      // Total Rows
@@ -100,7 +100,7 @@ int main()
         Window Setup
     */
     RenderWindow window(VideoMode(resolutionX, resolutionY), "Centipede", Style::Close | Style::Titlebar);
-    window.setSize(Vector2u(600, 680));
+    window.setSize(Vector2u(570, 665));
     window.setPosition(Vector2i(400, 0));
 
     /*
@@ -159,8 +159,10 @@ int main()
     UpdateGrid(Player[x], Player[y], OPlayer);
 
     int centepedes_count = 0;
-    int size = 12;
-    int Position[2] = {30 - 12, 0};
+    int InitialSize = 12;
+    bool Initialized = false;
+    int EnteringPositionX = rand() % (gameColumns - 1);
+    int Position[2] = {gameColumns, -1};
     int ***centepede_ptr = new int **[centepedes_count];
 
     float Lasers[MAX_LASERS][3]{};
@@ -178,7 +180,7 @@ int main()
     /*
         Initialization
     */
-    GenerateCentipede(centepede_ptr, 10, Position, LEFT, DOWN, centepedes_count);
+    GenerateCentipede(centepede_ptr, InitialSize, Position, LEFT, DOWN, centepedes_count);
     GenerateMushrooms(MushroomsPtr);
 
     /*
@@ -224,6 +226,16 @@ int main()
             HandlePlayer(Player);
             PlayerMovementClock.restart();
             MoveCentepedes(centepede_ptr, centepedes_count, MushroomsPtr);
+            if (!Initialized)
+            {
+                if (centepede_ptr[0][0][x] == (EnteringPositionX))
+                {
+                    centepede_ptr[0][0][y]++;
+                    centepede_ptr[0][0][x]++;
+                    UpdateGrid(Position[x], Position[y], ONone);
+                    Initialized = true;
+                }
+            }
         }
         if (LaserClock.getElapsedTime().asMilliseconds() > 200)
         {
@@ -509,50 +521,56 @@ int GetMushroom(int Position[], int *Mushroomsptr)
 
 bool UpdateGrid(int Grid_x, int Grid_y, int object)
 {
-    if (object != ONone)
+    if (Grid_x < gameColumns && Grid_x >= 0 && Grid_y < gameRows && Grid_y >= 0)
     {
-        if ((gameGrid[Grid_y][Grid_x] != OPlayer) || (object != OLaser))
+        if (object != ONone)
         {
-            if (gameGrid[Grid_y][Grid_x] != ONone)
+            if ((gameGrid[Grid_y][Grid_x] != OPlayer) || (object != OLaser))
             {
-                return true;
+                if (gameGrid[Grid_y][Grid_x] != ONone)
+                {
+                    return true;
+                }
             }
         }
+        gameGrid[Grid_y][Grid_x] = object;
     }
-    gameGrid[Grid_y][Grid_x] = object;
     return false;
 }
 bool UpdateGrid(int Grid_x, int Grid_y, int object, int &collidedObject, int Direction)
 {
-    switch (Direction)
+    if (Grid_x < gameColumns && Grid_x >= 0 && Grid_y < gameRows && Grid_y >= 0)
     {
-    case LEFT:
-        if (Grid_x == 0)
+        switch (Direction)
         {
-            collidedObject = OWalls;
-            return true;
-        }
-        break;
-    case RIGHT:
-        if (Grid_x == gameColumns - 1)
-        {
-            collidedObject = OWalls;
-            return true;
-        }
-    }
-
-    if (object != ONone)
-    {
-        if ((gameGrid[Grid_y][Grid_x] != OPlayer) || (object != OLaser))
-        {
-            if (gameGrid[Grid_y][Grid_x] != ONone)
+        case LEFT:
+            if (Grid_x == 0)
             {
-                collidedObject = gameGrid[Grid_y][Grid_x];
+                collidedObject = OWalls;
+                return true;
+            }
+            break;
+        case RIGHT:
+            if (Grid_x == gameColumns - 1)
+            {
+                collidedObject = OWalls;
                 return true;
             }
         }
+
+        if (object != ONone)
+        {
+            if ((gameGrid[Grid_y][Grid_x] != OPlayer) || (object != OLaser))
+            {
+                if (gameGrid[Grid_y][Grid_x] != ONone)
+                {
+                    collidedObject = gameGrid[Grid_y][Grid_x];
+                    return true;
+                }
+            }
+        }
+        gameGrid[Grid_y][Grid_x] = object;
     }
-    gameGrid[Grid_y][Grid_x] = object;
     return false;
 }
 
