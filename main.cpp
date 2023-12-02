@@ -94,10 +94,11 @@ void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&Mushrooms
 int GetCentipede(int ***&centipedeptr, int centipedes_count, int Position[]);
 int GetCentipedeBodyIndex(int ***&centipedeptr, int centipede_n, int Position[]);
 
-void UpdateScore(Text &T_Score, int &Score, int Increase);
+void UpdateScore(int Increase, char C_Score[]);
 
 int main()
 {
+    srand(time(0));
     /*
         Window Setup
     */
@@ -134,7 +135,7 @@ int main()
             - Lasers
             - Mushrooms
     */
-    int Score = 0;
+    char C_Score[20] = "Score : 0000";
 
     int Player[2]{};
     Player[x] = (gameColumns / 2);
@@ -169,14 +170,12 @@ int main()
 
     // Display Level
     T_Level.setFont(myfont);
-    T_Level.setString("1");
     T_Level.setCharacterSize(48);
     T_Level.setPosition(900, 35);
-    
+
     // Display Score
     T_Score.setFont(myfont);
     T_Score.setCharacterSize(48);
-    UpdateScore(T_Score, Score, 0);
     T_Score.setPosition(40, 35);
 
     /*
@@ -271,13 +270,15 @@ int main()
         }
         cout << endl; */
 
+        T_Score.setString(C_Score);
+        T_Level.setString("1");
+
         /*
             -> Render Objects
         */
         window.draw(BackgroundSprite);
         window.draw(T_Level);
         window.draw(T_Score);
-        // window.draw(T_HScore);
         RenderPlayer(window, Player, PlayerSprite);
         RenderCentepedes(window, CentepedeTexture_HEAD, CentepedeTexture_BODY, centepede_ptr, centepedes_count);
         RenderLasers(window, Lasers, LaserSprites);
@@ -466,7 +467,7 @@ void DestructMushroom(int Position[], int *&MushroomsPtr)
     int *mushroom_health = (MushroomsPtr + GetMushroom(Position, MushroomsPtr) + health);
     *mushroom_health = *mushroom_health - 1;
     if (*mushroom_health == 0)
-        UpdateGrid(Position[x], Position[y], ONone);
+        DestroyMushroom(Position, MushroomsPtr);
 }
 void DestroyMushroom(int Position[], int *&MushroomsPtr)
 {
@@ -475,7 +476,6 @@ void DestroyMushroom(int Position[], int *&MushroomsPtr)
 }
 void GenerateMushrooms(int *&Mushrooms)
 {
-    srand(time(0));
     MushroomsCount = (rand() % 11) + 20;
     Mushrooms = new int[MushroomsCount * 3];
 
@@ -782,15 +782,14 @@ int GetCentipedeBodyIndex(int ***&centipedeptr, int centipede_n, int Position[])
     }
     return -1;
 }
-void UpdateScore(Text &T_Score, int &Score, int Increase)
+void UpdateScore(int Increase, char C_Score[])
 {
-    char C_Score[20] = "Score : ";
-    Score = Score + Increase;
+    static int Score = 0;
+    Score += Increase;
     int TEMP = Score;
     for (int i = 0; i < 4; i++)
     {
         C_Score[i + 8] = (TEMP / pow(10, 3 - i)) + 48;
         TEMP %= static_cast<int>(pow(10, 3 - i));
     }
-    T_Score.setString(C_Score);
 }
