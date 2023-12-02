@@ -72,14 +72,14 @@ int MushroomsCount = 0;
 void RenderPlayer(RenderWindow &window, int player[], Sprite &playersprite); // Render Player
 void MovePlayer(int player[], int direction);                                // Control Player Movement
 
-void SpawnLaser(float Lasers[][3], const int player[], Sprite LaserSprites[], Texture &LaserTexture); // Spawn a single bullet
-void RenderLasers(RenderWindow &window, float Lasers[][3], Sprite LaserSprite[]);                     // Render Bullet
-bool MoveLasers(float Laser[][3], int *&MushroomsPtr, int ***&CentipedePtr, int &centipedes_count);   // Control Bullet Movement
+void SpawnLaser(float Lasers[][3], const int player[], Sprite LaserSprites[], Texture &LaserTexture);               // Spawn a single bullet
+void RenderLasers(RenderWindow &window, float Lasers[][3], Sprite LaserSprite[]);                                   // Render Bullet
+bool MoveLasers(float Laser[][3], int *&MushroomsPtr, int ***&CentipedePtr, int &centipedes_count, char C_Score[]); // Control Bullet Movement
 
 void GenerateMushrooms(int *&Mushrooms);
 void RenderMushrooms(RenderWindow &Window, Texture &MushroomTexture, int *&Mushrooms);
-void DestructMushroom(int Position[], int *&MushroomsPtr);
-void DestroyMushroom(int Position[], int *&MushroomsPtr);
+void DestructMushroom(int Position[], int *&MushroomsPtr, char C_Score[]);
+void DestroyMushroom(int Position[], int *&MushroomsPtr, char C_Score[]);
 int GetMushroom(int Position[], int *Mushroomsptr);
 
 void HandlePlayer(int player[2]); // Handle KeyBoard Inputs
@@ -90,7 +90,7 @@ bool UpdateGrid(int Grid_x, int Grid_y, int object, int &collidedObject, int Dir
 void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int Direction, int T_Direction, int &centepedes_count, int **PreviousBody = nullptr, bool SplitDown = false);
 void DeleteCentepede(int ***&centepede_ptr, int n, int &centepedes_count);
 void RenderCentepedes(RenderWindow &Window, Texture CentepedeTexture_HEAD, Texture CentepedeTexture_BODY, int ***&centepede_ptr, int centepedes_count);
-void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&MushroomsPtr);
+void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&MushroomsPtr, char C_Score[]);
 int GetCentipede(int ***&centipedeptr, int centipedes_count, int Position[]);
 int GetCentipedeBodyIndex(int ***&centipedeptr, int centipede_n, int Position[]);
 
@@ -226,7 +226,7 @@ int main()
         {
             HandlePlayer(Player);
             PlayerMovementClock.restart();
-            MoveCentepedes(centepede_ptr, centepedes_count, MushroomsPtr);
+            MoveCentepedes(centepede_ptr, centepedes_count, MushroomsPtr, C_Score);
             if (!Initialized)
             {
                 if (centepede_ptr[0][0][x] == (EnteringPositionX))
@@ -255,7 +255,7 @@ int main()
         */
         if (LaserShoted)
         {
-            if (MoveLasers(Lasers, MushroomsPtr, centepede_ptr, centepedes_count) == false)
+            if (MoveLasers(Lasers, MushroomsPtr, centepede_ptr, centepedes_count, C_Score) == false)
                 LaserShoted = false;
         }
 
@@ -384,7 +384,7 @@ void RenderLasers(RenderWindow &window, float Lasers[][3], Sprite LaserSprite[])
         }
     }
 }
-bool MoveLasers(float Laser[][3], int *&MushroomsPtr, int ***&CentipedePtr, int &centipedes_count)
+bool MoveLasers(float Laser[][3], int *&MushroomsPtr, int ***&CentipedePtr, int &centipedes_count, char C_Score[])
 {
     bool lasers_in_motion = false;
     for (int i = 0; i < MAX_LASERS; i++)
@@ -407,7 +407,7 @@ bool MoveLasers(float Laser[][3], int *&MushroomsPtr, int ***&CentipedePtr, int 
                     switch (collided_object)
                     {
                     case OMushroom:
-                        DestructMushroom(Position, MushroomsPtr);
+                        DestructMushroom(Position, MushroomsPtr, C_Score);
                         break;
                     case OCentepede:
                     {
@@ -462,17 +462,18 @@ bool MoveLasers(float Laser[][3], int *&MushroomsPtr, int ***&CentipedePtr, int 
     }
     return lasers_in_motion;
 }
-void DestructMushroom(int Position[], int *&MushroomsPtr)
+void DestructMushroom(int Position[], int *&MushroomsPtr, char C_Score[])
 {
     int *mushroom_health = (MushroomsPtr + GetMushroom(Position, MushroomsPtr) + health);
     *mushroom_health = *mushroom_health - 1;
     if (*mushroom_health == 0)
-        DestroyMushroom(Position, MushroomsPtr);
+        DestroyMushroom(Position, MushroomsPtr, C_Score);
 }
-void DestroyMushroom(int Position[], int *&MushroomsPtr)
+void DestroyMushroom(int Position[], int *&MushroomsPtr, char C_Score[])
 {
     *(MushroomsPtr + GetMushroom(Position, MushroomsPtr) + health) = 0;
     UpdateGrid(Position[x], Position[y], ONone);
+    UpdateScore(1, C_Score);
 }
 void GenerateMushrooms(int *&Mushrooms)
 {
@@ -690,7 +691,7 @@ void RenderCentepedes(RenderWindow &Window, Texture CentepedeTexture_HEAD, Textu
         }
     }
 }
-void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&mushroom_ptr)
+void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&mushroom_ptr, char C_Score[])
 {
     const int step_size = 1;
     for (int i = 0; i < centepedes_count; i++)
@@ -717,7 +718,7 @@ void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int *&mushroom_
             if (collided_object != OCentepede)
             {
                 if (PreviousObject == OMushroom)
-                    DestroyMushroom(Position, mushroom_ptr);
+                    DestroyMushroom(Position, mushroom_ptr, C_Score);
                 centepede_ptr[i][0][CDirection] = ((centepede_ptr[i][0][CDirection]) == RIGHT) ? (LEFT) : (RIGHT);
 
                 if (Position[y] == (gameRows - 1))
