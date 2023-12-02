@@ -35,17 +35,15 @@ const int y = 1; // y-coordinate
 
 const int ONone = 0;      // Nothing Object
 const int OPlayer = 1;    // Player Object
-const int OMushroom = 2;  // Mushroom Object
-const int OLaser = 3;     // Mushroom Object
-const int OCentepede = 4; // Centepede Object
-const int OWalls = 5;     // Walls
+const int ODMushroom = 2; // Mushroom Object
+const int OPMushroom = 3; // Mushroom Object
+const int OLaser = 4;     // Mushroom Object
+const int OCentepede = 5; // Centepede Object
+const int OWalls = 6;     // Walls
 
 const int exists = 2; // Specifically for [Bullet]
 const int health = 2; // Specifically for [Mushroom]
 const int MType = 3;
-
-const int MDefault = 0;
-const int MPoisonous = 1;
 
 const int CDirection = 2;
 const int CSize = 3;
@@ -420,7 +418,8 @@ bool MoveLasers(float Laser[][3], int **&Mushrooms_Ptr, int &MushroomsCount, int
                 {
                     switch (collided_object)
                     {
-                    case OMushroom:
+                    case ODMushroom:
+                    case OPMushroom:
                         DestructMushroom(Position, Mushrooms_Ptr, MushroomsCount, C_Score);
                         break;
                     case OCentepede:
@@ -465,7 +464,7 @@ bool MoveLasers(float Laser[][3], int **&Mushrooms_Ptr, int &MushroomsCount, int
                             GenerateCentipede(CentipedePtr, size - body_index, Position, Direction, T_Direction, centipedes_count, PreviousDataP2, true);
                             UpdateGrid(Position[x], Position[y], ONone);
                             if (isInPlayerArea(Position))
-                                GenerateMushroom(Mushrooms_Ptr, MushroomsCount, MPoisonous, Position);
+                                GenerateMushroom(Mushrooms_Ptr, MushroomsCount, OPMushroom, Position);
 
                             // Freeing Memory
                             for (int l = 0; l < body_index; l++)
@@ -520,7 +519,7 @@ void GenerateMushroom(int **&Mushrooms_Ptr, int &MushroomsCount, int Type, bool 
                 Mushrooms_Ptr = temp;
                 temp = nullptr;
             }
-            UpdateGrid(Grid_X, Grid_Y, OMushroom);
+            UpdateGrid(Grid_X, Grid_Y, Type);
             Mushrooms_Ptr[MushroomsCount - 1][x] = Grid_X;
             Mushrooms_Ptr[MushroomsCount - 1][y] = Grid_Y;
             Mushrooms_Ptr[MushroomsCount - 1][health] = 2;
@@ -548,7 +547,7 @@ bool GenerateMushroom(int **&Mushrooms_Ptr, int &MushroomsCount, int Type, int P
             Mushrooms_Ptr = temp;
             temp = nullptr;
         }
-        UpdateGrid(Grid_X, Grid_Y, OMushroom);
+        UpdateGrid(Grid_X, Grid_Y, Type);
         Mushrooms_Ptr[MushroomsCount - 1][x] = Grid_X;
         Mushrooms_Ptr[MushroomsCount - 1][y] = Grid_Y;
         Mushrooms_Ptr[MushroomsCount - 1][health] = 2;
@@ -564,7 +563,7 @@ void GenerateMushrooms(int **&Mushrooms_Ptr, int &MushroomsCount)
     for (int i = 0; i < RandomCountMushrooms; i++)
     {
         Mushrooms_Ptr[i] = new int[4];
-        GenerateMushroom(Mushrooms_Ptr, MushroomsCount, MDefault);
+        GenerateMushroom(Mushrooms_Ptr, MushroomsCount, ODMushroom);
     }
 }
 void RenderMushrooms(RenderWindow &Window, Texture &MushroomTexture, int **&Mushrooms_Ptr, int &MushroomsCount)
@@ -576,7 +575,7 @@ void RenderMushrooms(RenderWindow &Window, Texture &MushroomTexture, int **&Mush
             Sprite mushroom;
             mushroom.setTexture(MushroomTexture);
             int TextureTop = 0, TextureLeft = 0;
-            if (Mushrooms_Ptr[i][MType] == MDefault)
+            if (Mushrooms_Ptr[i][MType] == ODMushroom)
                 TextureTop = boxPixelsY;
             if (Mushrooms_Ptr[i][health] == 1)
                 TextureLeft = boxPixelsX;
@@ -672,7 +671,7 @@ void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int Dire
     else
     {
         *(centepede_ptr[centepedes_count - 1][0] + x) = Position[x] + ((Direction == LEFT) ? (1) : (-1));
-        *(centepede_ptr[centepedes_count - 1][0] + y) = Position[y] + 1;
+        *(centepede_ptr[centepedes_count - 1][0] + y) = Position[y] + ((T_Direction == DOWN) ? (1) : (-1));
         *(centepede_ptr[centepedes_count - 1][0] + CDirection) = (Direction == LEFT) ? (RIGHT) : (LEFT);
     }
     *(centepede_ptr[centepedes_count - 1][0] + TDirection) = T_Direction;
@@ -771,11 +770,16 @@ void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int **&Mushroom
         int collided_object = 0;
         int size = centepede_ptr[i][0][CSize];
         int P_direction = centepede_ptr[i][0][CDirection];
+        int T_direction = centepede_ptr[i][0][TDirection];
         int Position[2]{
             centepede_ptr[i][0][x],
             centepede_ptr[i][0][y]};
         int PreviousObject = gameGrid[Position[y]][Position[x]];
-
+        int NextObject = ONone;
+        if ((Position[x] < (gameColumns - 1) && Position[x] > 0) && (Position[y] < gameRows && Position[y] > 0))
+            NextObject = gameGrid[Position[y]][Position[x] + ((P_direction == RIGHT) ? (1) : (-1))];
+        else
+            NextObject = gameGrid[Position[y] + (T_direction == DOWN) ? (1) : (-1)][Position[x]];
         for (int j = 0; j < size; j++)
             UpdateGrid(centepede_ptr[i][j][x], centepede_ptr[i][j][y], ONone);
         for (int j = size - 1; j > 0; j--)
@@ -784,12 +788,12 @@ void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int **&Mushroom
             centepede_ptr[i][j][y] = centepede_ptr[i][j - 1][y];
             centepede_ptr[i][j][CDirection] = centepede_ptr[i][j - 1][CDirection];
         }
-        bool Collision = PreviousObject == OMushroom || PreviousObject == OPlayer;
+        bool Collision = (PreviousObject == ODMushroom || PreviousObject == OPlayer || NextObject == OPMushroom || PreviousObject == OPMushroom);
         if (Collision || UpdateGrid(Position[x], Position[y], OCentepede, collided_object, P_direction))
         {
             if (collided_object != OCentepede)
             {
-                if (PreviousObject == OMushroom)
+                if (PreviousObject == ODMushroom || PreviousObject == OPMushroom)
                     DestroyMushroom(Position, Mushrooms_Ptr, MushroomsCount, C_Score);
                 if (PreviousObject == OPlayer)
                 {
