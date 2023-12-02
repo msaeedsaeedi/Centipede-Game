@@ -461,7 +461,7 @@ bool MoveLasers(float Laser[][3], int **&Mushrooms_Ptr, int &MushroomsCount, int
                             DeleteCentepede(CentipedePtr, centipede_n, centipedes_count);
                             Position[x] += (Direction == LEFT) ? (-body_index) : (body_index);
                             GenerateCentipede(CentipedePtr, body_index, Position, Direction, T_Direction, centipedes_count, PreviousDataP1);
-                            Position[x] += (Direction == LEFT) ? (body_index + 1) : (-body_index - 1);
+                            Position[x] += (Direction == LEFT) ? (body_index) : (-body_index);
                             GenerateCentipede(CentipedePtr, size - body_index, Position, Direction, T_Direction, centipedes_count, PreviousDataP2, true);
                             UpdateGrid(Position[x], Position[y], ONone);
                             if (isInPlayerArea(Position))
@@ -671,7 +671,7 @@ void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int Dire
     }
     else
     {
-        *(centepede_ptr[centepedes_count - 1][0] + x) = Position[x];
+        *(centepede_ptr[centepedes_count - 1][0] + x) = Position[x] + ((Direction == LEFT) ? (1) : (-1));
         *(centepede_ptr[centepedes_count - 1][0] + y) = Position[y] + 1;
         *(centepede_ptr[centepedes_count - 1][0] + CDirection) = (Direction == LEFT) ? (RIGHT) : (LEFT);
     }
