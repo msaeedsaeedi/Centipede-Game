@@ -55,6 +55,10 @@ const int DOWN = 1;  // Move Down
 const int RIGHT = 2; // Move Right
 const int LEFT = 3;  // Move Left
 
+const int State_Menu = 0;
+const int State_Play = 1;
+const int State_Exit = 2;
+
 /*
     Global Variables
 */
@@ -113,6 +117,7 @@ void PlayMovePlayerSound();
 
 int main()
 {
+    int State = State_Menu;
     srand(time(0));
     /*
         Window Setup
@@ -121,216 +126,266 @@ int main()
     window.setSize(Vector2u(570, 665));
     window.setPosition(Vector2i(400, 0));
 
-    /*
-        Setup Objects For Rendering
-            - Background
-            - Player
-            - Centepede
-    */
-    Texture BackgroundTexture;
-    Sprite BackgroundSprite;
-    BackgroundTexture.loadFromFile("Textures/background.png");
-    BackgroundSprite.setTexture(BackgroundTexture);
-
-    Texture PlayerTexture;
-    Sprite PlayerSprite;
-    PlayerTexture.loadFromFile("Textures/player.png");
-    PlayerSprite.setTexture(PlayerTexture);
-
-    Texture CentepedeTexture_HEAD;
-    Texture CentepedeTexture_BODY;
-    CentepedeTexture_HEAD.loadFromFile("Textures/c_head_left_walk.png");
-    CentepedeTexture_BODY.loadFromFile("Textures/c_body_left_walk.png");
-
-    /*
-        Sound
-            - Background Music
-            - Firing
-    */
-    Music backgroundMusic;
-    backgroundMusic.openFromFile("Music/background.ogg");
-    backgroundMusic.setLoop(true);
-    backgroundMusic.setVolume(50);
-    backgroundMusic.play();
-
-    /*
-    Setup Data
-        - Score
-        - Player
-        - Centepede
-        - Lasers
-        - Mushrooms
-*/
-    char C_Score[20] = "Score : 0000";
-
-    int Player[2]{};
-    Player[x] = (gameColumns / 2);
-    Player[y] = (gameRows - 5);
-    UpdateGrid(Player[x], Player[y], OPlayer);
-
-    int centepedes_count = 0;
-    int InitialSize = 12;
-    bool Initialized = false;
-    int EnteringPositionX = rand() % (gameColumns - 2);
-    int Position[2] = {gameColumns, -1};
-    int ***centepede_ptr = new int **[centepedes_count];
-
-    float Lasers[MAX_LASERS][3]{};
-    bool LaserShoted = false;
-    Sprite LaserSprites[MAX_LASERS]{};
-    Texture LaserTexture;
-    LaserTexture.loadFromFile("Textures/bullet.png");
-    LaserTexture.setSmooth(true);
-
-    int MushroomsCount = 0;
-    int **Mushrooms_Ptr = NULL;
-    Texture MushroomTexture;
-    MushroomTexture.loadFromFile("Textures/mushroom.png");
-
-    /*
-        Text to Display
-    */
-    Font myfont;
-    Text T_Level, T_Score;
-    myfont.loadFromFile("Fonts/BebasNeue-Regular.ttf");
-
-    // Display Level
-    T_Level.setFont(myfont);
-    T_Level.setCharacterSize(48);
-    T_Level.setPosition(900, 35);
-
-    // Display Score
-    T_Score.setFont(myfont);
-    T_Score.setCharacterSize(48);
-    T_Score.setPosition(40, 35);
-
-    /*
-        Initialization
-    */
-    GenerateCentipede(centepede_ptr, InitialSize, Position, LEFT, DOWN, centepedes_count);
-    GenerateMushrooms(Mushrooms_Ptr, MushroomsCount);
-
-    /*
-        Clocks
-    */
-    Clock PlayerMovementClock;
-    Clock LaserClock;
-    Clock DeltaClock;
-    Clock CentipedeGenerationClock;
-    Clock CentipedeClock;
-
-    /*
-        Game Main Loops
-    */
-    while (window.isOpen())
+    while (State != State_Exit)
     {
-        /*
-            Calculating Delta Seconds for Speed
-        */
-        Time elapsed = DeltaClock.restart();
-        delta = elapsed.asSeconds();
+        if (State == State_Menu)
+        {
+            Texture BackgroundTexture;
+            Sprite BackgroundSprite;
+            BackgroundTexture.loadFromFile("Screens/Menu.png");
+            BackgroundSprite.setTexture(BackgroundTexture);
 
-        /*
-            -> Handling Events
-        */
-        Event e;
-        while (window.pollEvent(e))
+            Music backgroundMusic;
+            backgroundMusic.openFromFile("Music/MenuMusic.wav");
+            backgroundMusic.setLoop(true);
+            backgroundMusic.setVolume(70);
+            backgroundMusic.play();
+
+            while (window.isOpen() && State == State_Menu)
+            {
+                window.draw(BackgroundSprite);
+                Event e;
+                while (window.pollEvent(e))
+                {
+                    /*
+                        Handle Closed Event
+                    */
+                    if (e.type == Event::Closed)
+                    {
+                        window.close();
+                    }
+                    if (e.type == Event::KeyPressed)
+                    {
+                        if (e.key.code == Keyboard::S)
+                        {
+                            State = State_Play;
+                            break;
+                        }
+                        if(e.key.code == Keyboard::E)
+                        {
+                            State = State_Exit;
+                            break;
+                        }
+                    }
+                }
+                window.display();
+                window.clear();
+            }
+        }
+        else if (State == State_Play)
         {
             /*
-                Handle Closed Event
+                Setup Objects For Rendering
+                    - Background
+                    - Player
+                    - Centepede
             */
-            if (e.type == Event::Closed)
-            {
-                window.close();
-            }
-        }
+            Texture BackgroundTexture;
+            Sprite BackgroundSprite;
+            BackgroundTexture.loadFromFile("Textures/background.png");
+            BackgroundSprite.setTexture(BackgroundTexture);
 
-        /*
-            Handle Keyboard
-                - Player Movement
-                - Laser Shots
-                - CentipedeGeneration
-        */
-        if (PlayerMovementClock.getElapsedTime().asMilliseconds() > 100)
-        {
-            HandlePlayer(Player);
-            PlayerMovementClock.restart();
-        }
-        if (CentipedeClock.getElapsedTime().asMilliseconds() > 100)
-        {
-            MoveCentepedes(centepede_ptr, centepedes_count, Mushrooms_Ptr, MushroomsCount, C_Score);
-            if (!Initialized)
-            {
-                if (centepede_ptr[0][0][x] == (EnteringPositionX))
-                {
-                    centepede_ptr[0][0][y]++;
-                    centepede_ptr[0][0][x]++;
-                    UpdateGrid(Position[x], Position[y], ONone);
-                    Initialized = true;
-                }
-            }
-            CentipedeClock.restart();
-        }
-        if (LaserClock.getElapsedTime().asMilliseconds() > 200)
-        {
-            if (Keyboard::isKeyPressed(Keyboard::Z))
-            {
-                PlayLaserSound();
-                LaserShoted = true;
-                SpawnLaser(Lasers, Player, LaserSprites, LaserTexture);
-                LaserClock.restart();
-            }
-        }
-        if (CentipedeGenerationClock.getElapsedTime().asMilliseconds() > 5000)
-        {
-            if (isInPlayerArea(Position))
-            {
-                int Position[2] = {gameColumns, gameRows - ((rand() % 5) + 1)};
-                GenerateCentipede(centepede_ptr, 1, Position, LEFT, DOWN, centepedes_count);
-                CentipedeGenerationClock.restart();
-            }
-        }
+            Texture PlayerTexture;
+            Sprite PlayerSprite;
+            PlayerTexture.loadFromFile("Textures/player.png");
+            PlayerSprite.setTexture(PlayerTexture);
 
-        /*
-            Real-Time Animations
-                - Lasers
+            Texture CentepedeTexture_HEAD;
+            Texture CentepedeTexture_BODY;
+            CentepedeTexture_HEAD.loadFromFile("Textures/c_head_left_walk.png");
+            CentepedeTexture_BODY.loadFromFile("Textures/c_body_left_walk.png");
+
+            /*
+                Sound
+                    - Background Music
+                    - Firing
+            */
+            Music backgroundMusic;
+            backgroundMusic.openFromFile("Music/background.ogg");
+            backgroundMusic.setLoop(true);
+            backgroundMusic.setVolume(50);
+            backgroundMusic.play();
+
+            /*
+            Setup Data
+                - Score
+                - Player
                 - Centepede
+                - Lasers
+                - Mushrooms
         */
-        if (LaserShoted)
-        {
-            if (MoveLasers(Lasers, Mushrooms_Ptr, MushroomsCount, centepede_ptr, centepedes_count, C_Score) == false)
-                LaserShoted = false;
-        }
+            char C_Score[20] = "Score : 0000";
 
-        /* system("clear");
-        for (int i = 0; i < gameRows; i++)
-        {
-            for (int j = 0; j < gameColumns; j++)
+            int Player[2]{};
+            Player[x] = (gameColumns / 2);
+            Player[y] = (gameRows - 5);
+            UpdateGrid(Player[x], Player[y], OPlayer);
+
+            int centepedes_count = 0;
+            int InitialSize = 12;
+            bool Initialized = false;
+            int EnteringPositionX = rand() % (gameColumns - 2);
+            int Position[2] = {gameColumns, -1};
+            int ***centepede_ptr = new int **[centepedes_count];
+
+            float Lasers[MAX_LASERS][3]{};
+            bool LaserShoted = false;
+            Sprite LaserSprites[MAX_LASERS]{};
+            Texture LaserTexture;
+            LaserTexture.loadFromFile("Textures/bullet.png");
+            LaserTexture.setSmooth(true);
+
+            int MushroomsCount = 0;
+            int **Mushrooms_Ptr = NULL;
+            Texture MushroomTexture;
+            MushroomTexture.loadFromFile("Textures/mushroom.png");
+
+            /*
+                Text to Display
+            */
+            Font myfont;
+            Text T_Level, T_Score;
+            myfont.loadFromFile("Fonts/BebasNeue-Regular.ttf");
+
+            // Display Level
+            T_Level.setFont(myfont);
+            T_Level.setCharacterSize(48);
+            T_Level.setPosition(900, 35);
+
+            // Display Score
+            T_Score.setFont(myfont);
+            T_Score.setCharacterSize(48);
+            T_Score.setPosition(40, 35);
+
+            /*
+                Initialization
+            */
+            GenerateCentipede(centepede_ptr, InitialSize, Position, LEFT, DOWN, centepedes_count);
+            GenerateMushrooms(Mushrooms_Ptr, MushroomsCount);
+
+            /*
+                Clocks
+            */
+            Clock PlayerMovementClock;
+            Clock LaserClock;
+            Clock DeltaClock;
+            Clock CentipedeGenerationClock;
+            Clock CentipedeClock;
+
+            /*
+                Game Main Loops
+            */
+            while (window.isOpen() && State == State_Play)
             {
-                cout << gameGrid[i][j] << "  ";
+                /*
+                    Calculating Delta Seconds for Speed
+                */
+                Time elapsed = DeltaClock.restart();
+                delta = elapsed.asSeconds();
+
+                /*
+                    -> Handling Events
+                */
+                Event e;
+                while (window.pollEvent(e))
+                {
+                    /*
+                        Handle Closed Event
+                    */
+                    if (e.type == Event::Closed)
+                    {
+                        window.close();
+                    }
+                }
+
+                /*
+                    Handle Keyboard
+                        - Player Movement
+                        - Laser Shots
+                        - CentipedeGeneration
+                */
+                if (PlayerMovementClock.getElapsedTime().asMilliseconds() > 100)
+                {
+                    HandlePlayer(Player);
+                    PlayerMovementClock.restart();
+                }
+                if (CentipedeClock.getElapsedTime().asMilliseconds() > 100)
+                {
+                    MoveCentepedes(centepede_ptr, centepedes_count, Mushrooms_Ptr, MushroomsCount, C_Score);
+                    if (!Initialized)
+                    {
+                        if (centepede_ptr[0][0][x] == (EnteringPositionX))
+                        {
+                            centepede_ptr[0][0][y]++;
+                            centepede_ptr[0][0][x]++;
+                            UpdateGrid(Position[x], Position[y], ONone);
+                            Initialized = true;
+                        }
+                    }
+                    CentipedeClock.restart();
+                }
+                if (LaserClock.getElapsedTime().asMilliseconds() > 200)
+                {
+                    if (Keyboard::isKeyPressed(Keyboard::Z))
+                    {
+                        PlayLaserSound();
+                        LaserShoted = true;
+                        SpawnLaser(Lasers, Player, LaserSprites, LaserTexture);
+                        LaserClock.restart();
+                    }
+                }
+                if (CentipedeGenerationClock.getElapsedTime().asMilliseconds() > 5000)
+                {
+                    if (isInPlayerArea(Position))
+                    {
+                        int Position[2] = {gameColumns, gameRows - ((rand() % 5) + 1)};
+                        GenerateCentipede(centepede_ptr, 1, Position, LEFT, DOWN, centepedes_count);
+                        CentipedeGenerationClock.restart();
+                    }
+                }
+
+                /*
+                    Real-Time Animations
+                        - Lasers
+                        - Centepede
+                */
+                if (LaserShoted)
+                {
+                    if (MoveLasers(Lasers, Mushrooms_Ptr, MushroomsCount, centepede_ptr, centepedes_count, C_Score) == false)
+                        LaserShoted = false;
+                }
+
+                /* system("clear");
+                for (int i = 0; i < gameRows; i++)
+                {
+                    for (int j = 0; j < gameColumns; j++)
+                    {
+                        cout << gameGrid[i][j] << "  ";
+                    }
+                    cout << "\n";
+                }
+                cout << endl; */
+
+                T_Score.setString(C_Score);
+                T_Level.setString("1");
+
+                /*
+                    -> Render Objects
+                */
+                window.draw(BackgroundSprite);
+                window.draw(T_Level);
+                window.draw(T_Score);
+                RenderPlayer(window, Player, PlayerSprite);
+                RenderCentepedes(window, CentepedeTexture_HEAD, CentepedeTexture_BODY, centepede_ptr, centepedes_count);
+                RenderLasers(window, Lasers, LaserSprites);
+                RenderMushrooms(window, MushroomTexture, Mushrooms_Ptr, MushroomsCount);
+                /*
+                     Refresh Frame
+                */
+                window.display();
+                window.clear();
             }
-            cout << "\n";
         }
-        cout << endl; */
-
-        T_Score.setString(C_Score);
-        T_Level.setString("1");
-
-        /*
-            -> Render Objects
-        */
-        window.draw(BackgroundSprite);
-        window.draw(T_Level);
-        window.draw(T_Score);
-        RenderPlayer(window, Player, PlayerSprite);
-        RenderCentepedes(window, CentepedeTexture_HEAD, CentepedeTexture_BODY, centepede_ptr, centepedes_count);
-        RenderLasers(window, Lasers, LaserSprites);
-        RenderMushrooms(window, MushroomTexture, Mushrooms_Ptr, MushroomsCount);
-        /*
-             Refresh Frame
-        */
-        window.display();
-        window.clear();
     }
     return 0;
 }
