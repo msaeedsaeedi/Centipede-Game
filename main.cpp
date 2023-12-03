@@ -19,7 +19,7 @@ const int gameColumns = 30;   // Total Columns
 
 const int MAX_SCORE_LENGTH = 4;
 
-const int MAX_LASERS = 3;            // Max Number of Bullets
+const int MAX_LASERS = 2;            // Max Number of Bullets
 const int MAX_MASHROOMS = 30;        // Max Number of Mushrooms
 const int MAX_CENTEPEDE_LENGTH = 12; // Max Centepede Length
 const int CentipedeHeadDataSize = 5;
@@ -265,7 +265,7 @@ int main()
             T_Score.setCharacterSize(48);
             T_Score.setPosition(40, 35);
 
-            for (levelindex = 1; levelindex <= 10 && State == State_Play; levelindex++) // Level Loop
+            for (levelindex = 1; levelindex < 10 && State == State_Play; levelindex++) // Level Loop
             {
                 levelup = false;
                 bool GeneratedPMushroom = false;
@@ -403,6 +403,7 @@ int main()
                             - Lasers
                             - Centepede
                     */
+                    delta = delta + delta * (levelindex * 0.05);
                     if (MoveLasers(Lasers, Mushrooms_Ptr, MushroomsCount, centepede_ptr, centepedes_count, C_Score) == 1)
                     {
                         GeneratedPMushroom = true;
@@ -638,7 +639,7 @@ int MoveLasers(float Laser[][3], int **&Mushrooms_Ptr, int &MushroomsCount, int 
             {
                 UpdateGrid(Position[x], Position[y], ONone);
             }
-            Laser[i][y] -= 35 * delta;
+            Laser[i][y] -= 30 * delta;
             if (Laser[i][y] < -1)
                 Laser[i][exists] = false;
             else if (Laser[i][y] > -1)
