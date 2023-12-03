@@ -29,6 +29,7 @@ const int CentipedeBodyDataSize = 3;
         - Objects
         - Bullet
         - Player Movement
+        - Sound Effects
 */
 const int x = 0; // x-coordinate
 const int y = 1; // y-coordinate
@@ -68,6 +69,7 @@ int gameGrid[gameRows][gameColumns] = {};
         - Mushrooms
         - Input Handling
         - Collision
+        - Sound Effects
         - Miscellaneous
 */
 
@@ -102,6 +104,13 @@ int GetCentipedeBodyIndex(int ***&centipedeptr, int centipede_n, int Position[])
 
 void UpdateScore(int Increase, char C_Score[]);
 
+void PlayLaserSound();
+void PlayKillSound();
+void PlayCentipedeHeadShotSound();
+void PlayCentipedeSplitSound();
+void PlayEatSound();
+void PlayMovePlayerSound();
+
 int main()
 {
     srand(time(0));
@@ -134,13 +143,24 @@ int main()
     CentepedeTexture_BODY.loadFromFile("Textures/c_body_left_walk.png");
 
     /*
-        Setup Data
-            - Score
-            - Player
-            - Centepede
-            - Lasers
-            - Mushrooms
+        Sound
+            - Background Music
+            - Firing
     */
+    Music backgroundMusic;
+    backgroundMusic.openFromFile("Music/background.ogg");
+    backgroundMusic.setLoop(true);
+    backgroundMusic.setVolume(50);
+    backgroundMusic.play();
+
+    /*
+    Setup Data
+        - Score
+        - Player
+        - Centepede
+        - Lasers
+        - Mushrooms
+*/
     char C_Score[20] = "Score : 0000";
 
     int Player[2]{};
@@ -197,6 +217,7 @@ int main()
     Clock LaserClock;
     Clock DeltaClock;
     Clock CentipedeGenerationClock;
+    Clock CentipedeClock;
 
     /*
         Game Main Loops
@@ -234,6 +255,9 @@ int main()
         {
             HandlePlayer(Player);
             PlayerMovementClock.restart();
+        }
+        if (CentipedeClock.getElapsedTime().asMilliseconds() > 100)
+        {
             MoveCentepedes(centepede_ptr, centepedes_count, Mushrooms_Ptr, MushroomsCount, C_Score);
             if (!Initialized)
             {
@@ -245,11 +269,13 @@ int main()
                     Initialized = true;
                 }
             }
+            CentipedeClock.restart();
         }
         if (LaserClock.getElapsedTime().asMilliseconds() > 200)
         {
             if (Keyboard::isKeyPressed(Keyboard::Z))
             {
+                PlayLaserSound();
                 LaserShoted = true;
                 SpawnLaser(Lasers, Player, LaserSprites, LaserTexture);
                 LaserClock.restart();
@@ -327,6 +353,8 @@ bool isInPlayerArea(int Position[])
 }
 void MovePlayer(int player[], int direction)
 {
+    PlayMovePlayerSound();
+
     UpdateGrid(player[x], player[y], ONone); // Modify this code Whole function
     switch (direction)
     {
@@ -431,6 +459,7 @@ bool MoveLasers(float Laser[][3], int **&Mushrooms_Ptr, int &MushroomsCount, int
                     {
                     case ODMushroom:
                     case OPMushroom:
+                        PlayKillSound();
                         DestructMushroom(Position, Mushrooms_Ptr, MushroomsCount, C_Score);
                         break;
                     case OCentepede:
@@ -448,9 +477,11 @@ bool MoveLasers(float Laser[][3], int **&Mushrooms_Ptr, int &MushroomsCount, int
                         {
                             DeleteCentepede(CentipedePtr, centipede_n, centipedes_count);
                             UpdateScore(20, C_Score);
+                            PlayCentipedeHeadShotSound();
                         }
                         else
                         {
+                            PlayCentipedeSplitSound();
                             UpdateScore(10, C_Score);
                             int **PreviousDataP1 = new int *[body_index];
                             int **PreviousDataP2 = new int *[size - body_index];
@@ -805,7 +836,10 @@ void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int **&Mushroom
             if (collided_object != OCentepede)
             {
                 if (PreviousObject == ODMushroom || PreviousObject == OPMushroom)
+                {
+                    PlayEatSound();
                     DestroyMushroom(Position, Mushrooms_Ptr, MushroomsCount, C_Score);
+                }
                 if (PreviousObject == OPlayer)
                 {
                     // Player Collision
@@ -884,4 +918,58 @@ void UpdateScore(int Increase, char C_Score[])
         C_Score[i + 8] = (TEMP / pow(10, 3 - i)) + 48;
         TEMP %= static_cast<int>(pow(10, 3 - i));
     }
+}
+void PlayLaserSound()
+{
+    static Sound SLaser;
+    static SoundBuffer _SLaser;
+    _SLaser.loadFromFile("Sound-Effects/fire.wav");
+    SLaser.setBuffer(_SLaser);
+    SLaser.setVolume(20);
+    SLaser.play();
+}
+void PlayKillSound()
+{
+    static Sound SMushroom_D;
+    static SoundBuffer _SBMushroom_D;
+    _SBMushroom_D.loadFromFile("Sound-Effects/kill.wav");
+    SMushroom_D.setBuffer(_SBMushroom_D);
+    SMushroom_D.setVolume(50);
+    SMushroom_D.play();
+}
+void PlayCentipedeSplitSound()
+{
+    static Sound SCentipedeSplit;
+    static SoundBuffer _SCentipedeSplit;
+    _SCentipedeSplit.loadFromFile("Sound-Effects/small.wav");
+    SCentipedeSplit.setBuffer(_SCentipedeSplit);
+    SCentipedeSplit.setVolume(60);
+    SCentipedeSplit.play();
+}
+void PlayCentipedeHeadShotSound()
+{
+    static Sound SCentipedeSplit;
+    static SoundBuffer _SCentipedeSplit;
+    _SCentipedeSplit.loadFromFile("Sound-Effects/headshot.wav");
+    SCentipedeSplit.setBuffer(_SCentipedeSplit);
+    SCentipedeSplit.setVolume(60);
+    SCentipedeSplit.play();
+}
+void PlayEatSound()
+{
+    static Sound SEat;
+    static SoundBuffer _SEat;
+    _SEat.loadFromFile("Sound-Effects/eat2.ogg");
+    SEat.setBuffer(_SEat);
+    SEat.setVolume(60);
+    SEat.play();
+}
+void PlayMovePlayerSound()
+{
+    static Sound SPlayer;
+    static SoundBuffer _SPlayer;
+    _SPlayer.loadFromFile("Sound-Effects/move.wav");
+    SPlayer.setBuffer(_SPlayer);
+    SPlayer.setVolume(20);
+    SPlayer.play();
 }
