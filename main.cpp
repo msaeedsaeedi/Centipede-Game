@@ -4,7 +4,6 @@
 #include <SFML/Audio.hpp>
 
 using namespace sf;
-using std::cout, std::endl;
 
 /*
  ** Constant Declerations **
