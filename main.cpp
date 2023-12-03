@@ -139,6 +139,7 @@ int main()
             Texture BackgroundTexture;
             Sprite BackgroundSprite;
             BackgroundTexture.loadFromFile("Screens/Menu.png");
+            BackgroundTexture.setSmooth(true);
             BackgroundSprite.setTexture(BackgroundTexture);
 
             Music backgroundMusic;
@@ -188,6 +189,7 @@ int main()
             Texture BackgroundTexture;
             Sprite BackgroundSprite;
             BackgroundTexture.loadFromFile("Textures/background.png");
+            BackgroundTexture.setSmooth(true);
             BackgroundSprite.setTexture(BackgroundTexture);
 
             Texture PlayerTexture;
@@ -413,6 +415,7 @@ int main()
             Texture BackgroundTexture;
             Sprite BackgroundSprite;
             BackgroundTexture.loadFromFile("Screens/GameOver.png");
+            BackgroundTexture.setSmooth(true);
             BackgroundSprite.setTexture(BackgroundTexture);
 
             Music backgroundMusic;
