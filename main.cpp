@@ -57,7 +57,8 @@ const int LEFT = 3;  // Move Left
 
 const int State_Menu = 0;
 const int State_Play = 1;
-const int State_Exit = 2;
+const int State_GameOver = 2;
+const int State_Exit = 3;
 
 /*
     Global Variables
@@ -155,18 +156,16 @@ int main()
                         window.close();
                         State = State_Exit;
                     }
-                    if (e.type == Event::KeyPressed)
+
+                    if (e.key.code == Keyboard::S)
                     {
-                        if (e.key.code == Keyboard::S)
-                        {
-                            State = State_Play;
-                            break;
-                        }
-                        if(e.key.code == Keyboard::E)
-                        {
-                            State = State_Exit;
-                            break;
-                        }
+                        State = State_Play;
+                        break;
+                    }
+                    if (e.key.code == Keyboard::E)
+                    {
+                        State = State_Exit;
+                        break;
                     }
                 }
                 window.display();
@@ -298,6 +297,11 @@ int main()
                         window.close();
                         State = State_Exit;
                     }
+                    if (e.key.code == Keyboard::P)
+                    {
+                        State = State_GameOver;
+                        break;
+                    }
                 }
 
                 /*
@@ -384,6 +388,73 @@ int main()
                 /*
                      Refresh Frame
                 */
+                window.display();
+                window.clear();
+            }
+        }
+        else if (State == State_GameOver)
+        {
+            Texture BackgroundTexture;
+            Sprite BackgroundSprite;
+            BackgroundTexture.loadFromFile("Screens/GameOver.png");
+            BackgroundSprite.setTexture(BackgroundTexture);
+
+            Music backgroundMusic;
+            backgroundMusic.openFromFile("Music/MenuMusic.wav");
+            backgroundMusic.setLoop(true);
+            backgroundMusic.setVolume(70);
+            backgroundMusic.play();
+
+            Font textfont;
+            textfont.loadFromFile("Fonts/Baumans-Regular.ttf");
+
+            Text Score;
+            Score.setFont(textfont);
+            Score.setCharacterSize(50);
+            Score.setString("14555");
+            Score.setPosition(715 - Score.getLocalBounds().width, 518);
+
+            Text Level;
+            Level.setFont(textfont);
+            Level.setCharacterSize(50);
+            Level.setString("1");
+            Level.setPosition(715 - Level.getLocalBounds().width, 594);
+
+            Text HighScore;
+            HighScore.setFont(textfont);
+            HighScore.setCharacterSize(50);
+            HighScore.setString("99999");
+            HighScore.setPosition(715 - HighScore.getLocalBounds().width, 670);
+
+            while (window.isOpen() && State == State_GameOver)
+            {
+                window.draw(BackgroundSprite);
+                window.draw(Score);
+                window.draw(Level);
+                window.draw(HighScore);
+
+                Event e;
+                while (window.pollEvent(e))
+                {
+                    /*
+                        Handle Closed Event
+                    */
+                    if (e.type == Event::Closed)
+                    {
+                        window.close();
+                        State = State_Exit;
+                    }
+                    if (e.key.code == Keyboard::R)
+                    {
+                        State = State_Play;
+                        break;
+                    }
+                    if (e.key.code == Keyboard::Escape)
+                    {
+                        State = State_Menu;
+                        break;
+                    }
+                }
                 window.display();
                 window.clear();
             }
