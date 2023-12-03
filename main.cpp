@@ -125,6 +125,7 @@ int main()
 {
     int State = State_Menu;
     char C_Score[20] = "Score : 0000";
+    int levelindex = 1;
     srand(time(0));
     /*
         Window Setup
@@ -264,7 +265,7 @@ int main()
             T_Score.setCharacterSize(48);
             T_Score.setPosition(40, 35);
 
-            for (int levelindex = 1; levelindex <= 10 && State == State_Play; levelindex++) // Level Loop
+            for (levelindex = 1; levelindex <= 10 && State == State_Play; levelindex++) // Level Loop
             {
                 levelup = false;
                 bool GeneratedPMushroom = false;
@@ -319,10 +320,18 @@ int main()
                             window.close();
                             State = State_Exit;
                         }
-                        if (Keyboard::isKeyPressed(Keyboard::LAlt) && Keyboard::isKeyPressed(Keyboard::P))
+                        if (Keyboard::isKeyPressed(Keyboard::LAlt))
                         {
-                            levelup = true;
-                            break;
+                            if (Keyboard::isKeyPressed(Keyboard::P))
+                            {
+                                levelup = true;
+                                break;
+                            }
+                            if (Keyboard::isKeyPressed(Keyboard::E))
+                            {
+                                State = State_GameOver;
+                                break;
+                            }
                         }
                         if (Keyboard::isKeyPressed(Keyboard::Escape))
                         {
@@ -411,7 +420,7 @@ int main()
                     cout << endl; */
 
                     T_Score.setString(C_Score);
-                    T_Level.setString("1");
+                    T_Level.setString(char(levelindex + 48));
 
                     /*
                         -> Render Objects
@@ -485,7 +494,7 @@ int main()
             Text Level;
             Level.setFont(textfont);
             Level.setCharacterSize(50);
-            Level.setString("1");
+            Level.setString(char(levelindex + 47));
             Level.setPosition(715 - Level.getLocalBounds().width, 594);
 
             Text HighScore;
