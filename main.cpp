@@ -153,6 +153,7 @@ int main()
                     if (e.type == Event::Closed)
                     {
                         window.close();
+                        State = State_Exit;
                     }
                     if (e.type == Event::KeyPressed)
                     {
@@ -295,6 +296,7 @@ int main()
                     if (e.type == Event::Closed)
                     {
                         window.close();
+                        State = State_Exit;
                     }
                 }
 
