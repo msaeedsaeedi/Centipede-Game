@@ -17,6 +17,8 @@ const int boxPixelsY = 32;    // Pixels Per Box Y
 const int gameRows = 30;      // Total Rows
 const int gameColumns = 30;   // Total Columns
 
+const int MAX_SCORE_LENGTH = 4;
+
 const int MAX_LASERS = 3;            // Max Number of Bullets
 const int MAX_MASHROOMS = 30;        // Max Number of Mushrooms
 const int MAX_CENTEPEDE_LENGTH = 12; // Max Centepede Length
@@ -108,6 +110,7 @@ int GetCentipede(int ***&centipedeptr, int centipedes_count, int Position[]);
 int GetCentipedeBodyIndex(int ***&centipedeptr, int centipede_n, int Position[]);
 
 void UpdateScore(int Increase, char C_Score[]);
+int GetScore(char C_Score[], char result[]);
 
 void PlayLaserSound();
 void PlayKillSound();
@@ -119,6 +122,7 @@ void PlayMovePlayerSound();
 int main()
 {
     int State = State_Menu;
+    char C_Score[20] = "Score : 0000";
     srand(time(0));
     /*
         Window Setup
@@ -172,7 +176,7 @@ int main()
                 window.clear();
             }
         }
-        else if (State == State_Play)
+        if (State == State_Play)
         {
             /*
                 Setup Objects For Rendering
@@ -214,7 +218,6 @@ int main()
                 - Lasers
                 - Mushrooms
         */
-            char C_Score[20] = "Score : 0000";
 
             int Player[2]{};
             Player[x] = (gameColumns / 2);
@@ -391,8 +394,21 @@ int main()
                 window.display();
                 window.clear();
             }
+            // Purge Everything
+            for (int i = 0; i < gameRows; i++)
+            {
+                for (int j = 0; j < gameColumns; j++)
+                {
+                    gameGrid[i][j] = 0;
+                }
+            }
+            for (int i = 0; i < centepedes_count; i++)
+            {
+                DeleteCentepede(centepede_ptr, i, centepedes_count);
+            }
+            
         }
-        else if (State == State_GameOver)
+        if (State == State_GameOver)
         {
             Texture BackgroundTexture;
             Sprite BackgroundSprite;
@@ -408,10 +424,13 @@ int main()
             Font textfont;
             textfont.loadFromFile("Fonts/Baumans-Regular.ttf");
 
+            char C_ScoreOnly[MAX_SCORE_LENGTH + 1]{};
+            GetScore(C_Score, C_ScoreOnly);
+
             Text Score;
             Score.setFont(textfont);
             Score.setCharacterSize(50);
-            Score.setString("14555");
+            Score.setString(C_ScoreOnly);
             Score.setPosition(715 - Score.getLocalBounds().width, 518);
 
             Text Level;
@@ -459,6 +478,7 @@ int main()
                 window.clear();
             }
         }
+        UpdateScore(0, C_Score);
     }
     return 0;
 }
@@ -949,7 +969,7 @@ void MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int **&Mushroom
         if ((Position[x] < (gameColumns - 1) && Position[x] > 0) && (Position[y] < gameRows && Position[y] > 0))
             NextObject = gameGrid[Position[y]][Position[x] + ((P_direction == RIGHT) ? (1) : (-1))];
         else
-            NextObject = gameGrid[Position[y] + (T_direction == DOWN) ? (1) : (-1)][Position[x]];
+            NextObject = gameGrid[Position[y] + ((T_direction == DOWN) ? (1) : (-1))][Position[x]];
         for (int j = 0; j < size; j++)
             UpdateGrid(centepede_ptr[i][j][x], centepede_ptr[i][j][y], ONone);
         for (int j = size - 1; j > 0; j--)
@@ -1039,13 +1059,25 @@ int GetCentipedeBodyIndex(int ***&centipedeptr, int centipede_n, int Position[])
 void UpdateScore(int Increase, char C_Score[])
 {
     static int Score = 0;
+    if (Increase == 0)
+        Score = 0;
     Score += Increase;
     int TEMP = Score;
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < MAX_SCORE_LENGTH; i++)
     {
         C_Score[i + 8] = (TEMP / pow(10, 3 - i)) + 48;
         TEMP %= static_cast<int>(pow(10, 3 - i));
     }
+}
+int GetScore(char C_Score[], char result[])
+{
+    int number = 0;
+    for (int i = MAX_SCORE_LENGTH - 1; i >= 0; i--)
+    {
+        result[i] = C_Score[i + 8];
+        number += C_Score[i + 8] * pow(10, i);
+    }
+    return number;
 }
 void PlayLaserSound()
 {
