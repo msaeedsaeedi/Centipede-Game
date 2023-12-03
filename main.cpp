@@ -196,6 +196,7 @@ int main()
     Clock PlayerMovementClock;
     Clock LaserClock;
     Clock DeltaClock;
+    Clock CentipedeGenerationClock;
 
     /*
         Game Main Loops
@@ -227,6 +228,7 @@ int main()
             Handle Keyboard
                 - Player Movement
                 - Laser Shots
+                - CentipedeGeneration
         */
         if (PlayerMovementClock.getElapsedTime().asMilliseconds() > 100)
         {
@@ -251,6 +253,15 @@ int main()
                 LaserShoted = true;
                 SpawnLaser(Lasers, Player, LaserSprites, LaserTexture);
                 LaserClock.restart();
+            }
+        }
+        if (CentipedeGenerationClock.getElapsedTime().asMilliseconds() > 5000)
+        {
+            if (isInPlayerArea(Position))
+            {
+                int Position[2] = {gameColumns, gameRows - ((rand() % 5) + 1)};
+                GenerateCentipede(centepede_ptr, 1, Position, LEFT, DOWN, centepedes_count);
+                CentipedeGenerationClock.restart();
             }
         }
 
@@ -463,8 +474,6 @@ bool MoveLasers(float Laser[][3], int **&Mushrooms_Ptr, int &MushroomsCount, int
                             Position[x] += (Direction == LEFT) ? (body_index) : (-body_index);
                             GenerateCentipede(CentipedePtr, size - body_index, Position, Direction, T_Direction, centipedes_count, PreviousDataP2, true);
                             UpdateGrid(Position[x], Position[y], ONone);
-                            if (isInPlayerArea(Position))
-                                GenerateMushroom(Mushrooms_Ptr, MushroomsCount, OPMushroom, Position);
 
                             // Freeing Memory
                             for (int l = 0; l < body_index; l++)
@@ -474,6 +483,8 @@ bool MoveLasers(float Laser[][3], int **&Mushrooms_Ptr, int &MushroomsCount, int
                                 delete[] PreviousDataP2[l];
                             delete[] PreviousDataP2;
                         }
+                        if (isInPlayerArea(Position))
+                            GenerateMushroom(Mushrooms_Ptr, MushroomsCount, OPMushroom, Position);
                         break;
                     }
                     }
