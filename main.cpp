@@ -96,6 +96,7 @@ void RenderMushrooms(RenderWindow &Window, Texture &MushroomTexture, int **&Mush
 void DestructMushroom(int Position[], int **&Mushrooms_Ptr, int &MushroomsCount, char C_Score[]);
 void DestroyMushroom(int Position[], int **&Mushrooms_Ptr, int &MushroomsCount, char C_Score[]);
 int GetMushroom(int Position[], int **&Mushrooms_Ptr, int &MushroomsCount);
+void PurgeMushrooms(int **&Mushrooms_Ptr, int &MushroomsCount);
 
 void HandlePlayer(int player[2]); // Handle KeyBoard Inputs
 
@@ -406,7 +407,7 @@ int main()
             {
                 DeleteCentepede(centepede_ptr, i, centepedes_count);
             }
-            
+            PurgeMushrooms(Mushrooms_Ptr, MushroomsCount);
         }
         if (State == State_GameOver)
         {
@@ -686,6 +687,15 @@ void DestroyMushroom(int Position[], int **&Mushrooms_Ptr, int &MushroomsCount, 
     Mushrooms_Ptr[GetMushroom(Position, Mushrooms_Ptr, MushroomsCount)][health] = 0;
     UpdateGrid(Position[x], Position[y], ONone);
     UpdateScore(1, C_Score);
+}
+void PurgeMushrooms(int **&Mushrooms_Ptr, int &MushroomsCount)
+{
+    for (int i = 0; i < MushroomsCount; i++)
+    {
+        delete[] Mushrooms_Ptr[i];
+    }
+    delete[] Mushrooms_Ptr;
+    Mushrooms_Ptr = 0;
 }
 void GenerateMushroom(int **&Mushrooms_Ptr, int &MushroomsCount, int Type, bool ManageHeap)
 {
