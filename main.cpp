@@ -61,7 +61,6 @@ const int State_Exit = 3;     // Game End
 /*
     Global Variables
 */
-float delta = 0;
 int gameGrid[gameRows][gameColumns] = {};
 
 /*
@@ -84,7 +83,7 @@ int HandlePlayerInput(int player[2]);
 */
 void SpawnLaser(float Lasers[][3], const int player[], Sprite LaserSprites[], Texture &LaserTexture);
 void RenderLasers(RenderWindow &window, float Lasers[][3], Sprite LaserSprite[]);
-int MoveLasers(float Laser[][3], int **&Mushrooms_Ptr, int &MushroomsCount, int ***&CentipedePtr, int &centipedes_count, char C_Score[]);
+int MoveLasers(float Laser[][3], int **&Mushrooms_Ptr, int &MushroomsCount, int ***&CentipedePtr, int &centipedes_count, char C_Score[], float delta);
 
 /*
 - Mushrooms
@@ -214,6 +213,7 @@ int main()
         if (State == State_Play) // Main Game State
         {
             bool levelup = false;
+            float delta = 0; // For Laser Smooth Movement
             /*
                 Setup Objects For Rendering
                     - Background
@@ -434,7 +434,7 @@ int main()
                         Move Lasers [Delta changes on level]
                     */
                     delta = delta + delta * (levelindex * 0.05);
-                    if (MoveLasers(Lasers, Mushrooms_Ptr, MushroomsCount, centipede_ptr, centipedes_count, C_Score) == 1)
+                    if (MoveLasers(Lasers, Mushrooms_Ptr, MushroomsCount, centipede_ptr, centipedes_count, C_Score, delta) == 1)
                     {
                         GeneratedPMushroom = true;
                     }
@@ -680,7 +680,7 @@ void RenderLasers(RenderWindow &window, float Lasers[][3], Sprite LaserSprite[])
         }
     }
 }
-int MoveLasers(float Laser[][3], int **&Mushrooms_Ptr, int &MushroomsCount, int ***&CentipedePtr, int &centipedes_count, char C_Score[])
+int MoveLasers(float Laser[][3], int **&Mushrooms_Ptr, int &MushroomsCount, int ***&CentipedePtr, int &centipedes_count, char C_Score[], float delta)
 {
     int return_response = 0;             // poisonous mushroom spawned ?
     for (int i = 0; i < MAX_LASERS; i++) // Move All lasers
