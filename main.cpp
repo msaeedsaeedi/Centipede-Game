@@ -941,7 +941,7 @@ void PlayCentipedeSplitSound()
 {
     static Sound SCentipedeSplit;
     static SoundBuffer _SCentipedeSplit;
-    _SCentipedeSplit.loadFromFile("Sound-Effects/small.wav");
+    _SCentipedeSplit.loadFromFile("Sound-Effects/split.wav");
     SCentipedeSplit.setBuffer(_SCentipedeSplit);
     SCentipedeSplit.setVolume(60);
     SCentipedeSplit.play();
@@ -959,7 +959,7 @@ void PlayEatSound()
 {
     static Sound SEat;
     static SoundBuffer _SEat;
-    _SEat.loadFromFile("Sound-Effects/eat2.ogg");
+    _SEat.loadFromFile("Sound-Effects/eat.ogg");
     SEat.setBuffer(_SEat);
     SEat.setVolume(60);
     SEat.play();
