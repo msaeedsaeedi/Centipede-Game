@@ -264,7 +264,7 @@ int main()
             T_Score.setCharacterSize(48);
             T_Score.setPosition(40, 35);
 
-            for (int levelindex = 1; State == State_Play; levelindex++) // Level Loop
+            for (int levelindex = 1; levelindex <= 10 && State == State_Play; levelindex++) // Level Loop
             {
                 levelup = false;
                 bool GeneratedPMushroom = false;
@@ -359,7 +359,7 @@ int main()
                         }
                         PlayerMovementClock.restart();
                     }
-                    if (CentipedeClock.getElapsedTime().asMilliseconds() > 100)
+                    if (CentipedeClock.getElapsedTime().asMilliseconds() > (100 - (levelindex * 5)))
                     {
                         if (MoveCentepedes(centepede_ptr, centepedes_count, Mushrooms_Ptr, MushroomsCount, C_Score, CentipedeGenerationClock) == -1)
                         {
