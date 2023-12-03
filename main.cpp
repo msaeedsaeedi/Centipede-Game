@@ -84,9 +84,9 @@ void RenderPlayer(RenderWindow &window, int player[], Sprite &playersprite); // 
 int MovePlayer(int player[], int direction);                                 // Control Player Movement
 bool isInPlayerArea(int Position[]);
 
-void SpawnLaser(float Lasers[][3], const int player[], Sprite LaserSprites[], Texture &LaserTexture);                                      // Spawn a single bullet
-void RenderLasers(RenderWindow &window, float Lasers[][3], Sprite LaserSprite[]);                                                          // Render Bullet
-bool MoveLasers(float Laser[][3], int **&Mushrooms_Ptr, int &MushroomsCount, int ***&CentipedePtr, int &centipedes_count, char C_Score[]); // Control Bullet Movement
+void SpawnLaser(float Lasers[][3], const int player[], Sprite LaserSprites[], Texture &LaserTexture);                                     // Spawn a single bullet
+void RenderLasers(RenderWindow &window, float Lasers[][3], Sprite LaserSprite[]);                                                         // Render Bullet
+int MoveLasers(float Laser[][3], int **&Mushrooms_Ptr, int &MushroomsCount, int ***&CentipedePtr, int &centipedes_count, char C_Score[]); // Control Bullet Movement
 
 void GenerateMushroom(int **&Mushrooms_Ptr, int &MushroomsCount, int Type, bool ManageHeap = false);
 bool GenerateMushroom(int **&Mushrooms_Ptr, int &MushroomsCount, int Type, int Position[], bool ManageHeap = true);
@@ -94,9 +94,10 @@ bool GenerateMushroom(int **&Mushrooms_Ptr, int &MushroomsCount, int Type, int P
 void GenerateMushrooms(int **&Mushrooms_Ptr, int &MushroomsCount, int n);
 void RenderMushrooms(RenderWindow &Window, Texture &MushroomTexture, int **&Mushrooms_Ptr, int &MushroomsCount);
 void DestructMushroom(int Position[], int **&Mushrooms_Ptr, int &MushroomsCount, char C_Score[]);
-void DestroyMushroom(int Position[], int **&Mushrooms_Ptr, int &MushroomsCount, char C_Score[]);
+void DestroyMushroom(int Position[], int **&Mushrooms_Ptr, int &MushroomsCount, char C_Score[], bool updateScore = true);
 int GetMushroom(int Position[], int **&Mushrooms_Ptr, int &MushroomsCount);
 void PurgeMushrooms(int **&Mushrooms_Ptr, int &MushroomsCount);
+int GetMushroomsCount(int **Mushrooms_Ptr, int MushroomsCount, int Type);
 
 int HandlePlayer(int player[2]); // Handle KeyBoard Inputs
 
@@ -234,7 +235,7 @@ int main()
             int centepedes_count = 0;
             int InitialSize = 12;
             bool Initialized = false;
-            int Position[2] = {gameColumns, -1};
+            int Position[2] = {gameColumns - 3, -1};
             int ***centepede_ptr = 0;
 
             float Lasers[MAX_LASERS][3]{};
@@ -266,6 +267,7 @@ int main()
             for (int levelindex = 1; State == State_Play; levelindex++) // Level Loop
             {
                 levelup = false;
+                bool GeneratedPMushroom = false;
 
                 Player[x] = (gameColumns / 2);
                 Player[y] = (gameRows - 5);
@@ -317,8 +319,31 @@ int main()
                             window.close();
                             State = State_Exit;
                         }
+                        if (Keyboard::isKeyPressed(Keyboard::LAlt) && Keyboard::isKeyPressed(Keyboard::P))
+                        {
+                            levelup = true;
+                            break;
+                        }
+                        if (Keyboard::isKeyPressed(Keyboard::Escape))
+                        {
+                            State = State_Menu;
+                            break;
+                        }
                     }
-
+                    if (centepedes_count == 0)
+                    {
+                        if (GeneratedPMushroom)
+                        {
+                            if (GetMushroomsCount(Mushrooms_Ptr, MushroomsCount, OPMushroom) == 0)
+                            {
+                                levelup = true;
+                            }
+                        }
+                        else
+                        {
+                            levelup = true;
+                        }
+                    }
                     /*
                         Handle Keyboard
                             - Player Movement
@@ -369,10 +394,9 @@ int main()
                             - Lasers
                             - Centepede
                     */
-                    if (LaserShoted)
+                    if (MoveLasers(Lasers, Mushrooms_Ptr, MushroomsCount, centepede_ptr, centepedes_count, C_Score) == 1)
                     {
-                        if (MoveLasers(Lasers, Mushrooms_Ptr, MushroomsCount, centepede_ptr, centepedes_count, C_Score) == false)
-                            LaserShoted = false;
+                        GeneratedPMushroom = true;
                     }
 
                     /* system("clear");
@@ -415,10 +439,16 @@ int main()
                 }
                 for (int i = 0; i < centepedes_count; i++)
                 {
-                    DeleteCentepede(centepede_ptr, i, centepedes_count);
+                    int size = centepede_ptr[i][0][CSize];
+                    for (int p = 0; p < size; p++)
+                    {
+                        delete[] centepede_ptr[i][p];
+                    }
+                    delete[] centepede_ptr[i];
                 }
                 delete[] centepede_ptr;
                 centepede_ptr = 0;
+                centepedes_count = 0;
                 PurgeMushrooms(Mushrooms_Ptr, MushroomsCount);
                 if (State == State_Play)
                 {
@@ -587,14 +617,13 @@ void RenderLasers(RenderWindow &window, float Lasers[][3], Sprite LaserSprite[])
         }
     }
 }
-bool MoveLasers(float Laser[][3], int **&Mushrooms_Ptr, int &MushroomsCount, int ***&CentipedePtr, int &centipedes_count, char C_Score[])
+int MoveLasers(float Laser[][3], int **&Mushrooms_Ptr, int &MushroomsCount, int ***&CentipedePtr, int &centipedes_count, char C_Score[])
 {
-    bool lasers_in_motion = false;
+    int return_response = 0;
     for (int i = 0; i < MAX_LASERS; i++)
     {
         if (Laser[i][exists] == true)
         {
-            lasers_in_motion = true;
             int Position[] = {int(Laser[i][x]), int(ceil(Laser[i][y]))};
             if (gameGrid[Position[y]][Position[x]] != OPlayer)
             {
@@ -670,7 +699,10 @@ bool MoveLasers(float Laser[][3], int **&Mushrooms_Ptr, int &MushroomsCount, int
                             delete[] PreviousDataP2;
                         }
                         if (isInPlayerArea(Position))
+                        {
                             GenerateMushroom(Mushrooms_Ptr, MushroomsCount, OPMushroom, Position);
+                            return_response = 1;
+                        }
                         break;
                     }
                     }
@@ -679,7 +711,7 @@ bool MoveLasers(float Laser[][3], int **&Mushrooms_Ptr, int &MushroomsCount, int
             }
         }
     }
-    return lasers_in_motion;
+    return return_response;
 }
 void DestructMushroom(int Position[], int **&Mushrooms_Ptr, int &MushroomsCount, char C_Score[])
 {
@@ -688,11 +720,12 @@ void DestructMushroom(int Position[], int **&Mushrooms_Ptr, int &MushroomsCount,
     if (Mushrooms_Ptr[MushroomIndex][health] == 0)
         DestroyMushroom(Position, Mushrooms_Ptr, MushroomsCount, C_Score);
 }
-void DestroyMushroom(int Position[], int **&Mushrooms_Ptr, int &MushroomsCount, char C_Score[])
+void DestroyMushroom(int Position[], int **&Mushrooms_Ptr, int &MushroomsCount, char C_Score[], bool updateScore)
 {
     Mushrooms_Ptr[GetMushroom(Position, Mushrooms_Ptr, MushroomsCount)][health] = 0;
     UpdateGrid(Position[x], Position[y], ONone);
-    UpdateScore(1, C_Score);
+    if (updateScore)
+        UpdateScore(1, C_Score);
 }
 void PurgeMushrooms(int **&Mushrooms_Ptr, int &MushroomsCount)
 {
@@ -798,6 +831,14 @@ int GetMushroom(int Position[], int **&Mushrooms_Ptr, int &MushroomsCount)
             return i;
     return 0;
 }
+int GetMushroomsCount(int **Mushrooms_Ptr, int MushroomsCount, int Type)
+{
+    int count = 0;
+    for (int i = 0; i < MushroomsCount; i++)
+        if (Mushrooms_Ptr[i][health] > 0 && Mushrooms_Ptr[i][MType] == Type)
+            count++;
+    return count;
+}
 bool UpdateGrid(int Grid_x, int Grid_y, int object)
 {
     if (Grid_x < gameColumns && Grid_x >= 0 && Grid_y < gameRows && Grid_y >= 0)
@@ -856,52 +897,52 @@ void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int Dire
     {
         D_temp[i] = centepede_ptr[i];
     }
-    delete[] centepede_ptr;
-    centepede_ptr = D_temp;
-
-    centepede_ptr[centepedes_count - 1] = new int *[size];
-    centepede_ptr[centepedes_count - 1][0] = new int[5];
-    *(centepede_ptr[centepedes_count - 1][0] + CSize) = size;
+    D_temp[centepedes_count - 1] = new int *[size];
+    D_temp[centepedes_count - 1][0] = new int[5];
+    *(D_temp[centepedes_count - 1][0] + CSize) = size;
     if (!SplitDown)
     {
-        *(centepede_ptr[centepedes_count - 1][0] + x) = Position[x];
-        *(centepede_ptr[centepedes_count - 1][0] + y) = Position[y];
-        *(centepede_ptr[centepedes_count - 1][0] + CDirection) = Direction;
+        *(D_temp[centepedes_count - 1][0] + x) = Position[x];
+        *(D_temp[centepedes_count - 1][0] + y) = Position[y];
+        *(D_temp[centepedes_count - 1][0] + CDirection) = Direction;
     }
     else
     {
-        *(centepede_ptr[centepedes_count - 1][0] + x) = Position[x] + ((Direction == LEFT) ? (1) : (-1));
-        *(centepede_ptr[centepedes_count - 1][0] + y) = Position[y] + ((T_Direction == DOWN) ? (1) : (-1));
-        *(centepede_ptr[centepedes_count - 1][0] + CDirection) = (Direction == LEFT) ? (RIGHT) : (LEFT);
+        *(D_temp[centepedes_count - 1][0] + x) = Position[x] + ((Direction == LEFT) ? (1) : (-1));
+        *(D_temp[centepedes_count - 1][0] + y) = Position[y] + ((T_Direction == DOWN) ? (1) : (-1));
+        *(D_temp[centepedes_count - 1][0] + CDirection) = (Direction == LEFT) ? (RIGHT) : (LEFT);
     }
-    *(centepede_ptr[centepedes_count - 1][0] + TDirection) = T_Direction;
+    *(D_temp[centepedes_count - 1][0] + TDirection) = T_Direction;
     UpdateGrid(Position[x], Position[y], OCentepede);
     for (int j = 1; j < size; j++)
     {
-        centepede_ptr[centepedes_count - 1][j] = new int[3];
+        D_temp[centepedes_count - 1][j] = new int[3];
         if (PreviousBody == nullptr)
         {
-            *(centepede_ptr[centepedes_count - 1][j] + y) = Position[y];
-            *(centepede_ptr[centepedes_count - 1][j] + CDirection) = Direction;
+            *(D_temp[centepedes_count - 1][j] + y) = Position[y];
+            *(D_temp[centepedes_count - 1][j] + CDirection) = Direction;
             if (Direction == LEFT)
             {
-                *(centepede_ptr[centepedes_count - 1][j] + x) = Position[x] + j;
+                *(D_temp[centepedes_count - 1][j] + x) = Position[x] + j;
                 UpdateGrid(Position[x] + j, Position[y], OCentepede);
             }
             else
             {
-                *(centepede_ptr[centepedes_count - 1][j] + x) = Position[x] - j;
+                *(D_temp[centepedes_count - 1][j] + x) = Position[x] - j;
                 UpdateGrid(Position[x] - j, Position[y], OCentepede);
             }
         }
         else
         {
-            *(centepede_ptr[centepedes_count - 1][j] + x) = PreviousBody[j][x];
-            *(centepede_ptr[centepedes_count - 1][j] + y) = PreviousBody[j][y];
-            *(centepede_ptr[centepedes_count - 1][j] + CDirection) = PreviousBody[j][CDirection];
+            *(D_temp[centepedes_count - 1][j] + x) = PreviousBody[j][x];
+            *(D_temp[centepedes_count - 1][j] + y) = PreviousBody[j][y];
+            *(D_temp[centepedes_count - 1][j] + CDirection) = PreviousBody[j][CDirection];
             UpdateGrid(PreviousBody[j][x], PreviousBody[j][y], OCentepede);
         }
     }
+    delete[] centepede_ptr;
+    centepede_ptr = D_temp;
+    D_temp = 0;
 }
 
 void DeleteCentepede(int ***&centepede_ptr, int n, int &centepedes_count)
@@ -988,10 +1029,10 @@ int MoveCentepedes(int ***&centepede_ptr, int &centepedes_count, int **&Mushroom
             centepede_ptr[i][j][y] = centepede_ptr[i][j - 1][y];
             centepede_ptr[i][j][CDirection] = centepede_ptr[i][j - 1][CDirection];
         }
-        bool Collision = (PreviousObject == ODMushroom || PreviousObject == OPlayer || NextObject == OPMushroom || PreviousObject == OPMushroom);
+        bool Collision = (PreviousObject == ODMushroom || NextObject == ODMushroom || PreviousObject == OPlayer || NextObject == OPMushroom || PreviousObject == OPMushroom);
         if (isInPlayerArea(Position))
         {
-            if (CentipedeGenerationClock.getElapsedTime().asSeconds() > 5)
+            if (CentipedeGenerationClock.getElapsedTime().asSeconds() > 10)
             {
                 int Position[2] = {gameColumns, gameRows - ((rand() % 5) + 1)};
                 GenerateCentipede(centepede_ptr, 1, Position, LEFT, DOWN, centepedes_count);
@@ -1005,7 +1046,7 @@ int MoveCentepedes(int ***&centepede_ptr, int &centepedes_count, int **&Mushroom
                 if (PreviousObject == ODMushroom || PreviousObject == OPMushroom)
                 {
                     PlayEatSound();
-                    DestroyMushroom(Position, Mushrooms_Ptr, MushroomsCount, C_Score);
+                    DestroyMushroom(Position, Mushrooms_Ptr, MushroomsCount, C_Score, false);
                 }
                 if (PreviousObject == OPlayer)
                 {
