@@ -81,7 +81,7 @@ int gameGrid[gameRows][gameColumns] = {};
 */
 
 void RenderPlayer(RenderWindow &window, int player[], Sprite &playersprite); // Render Player
-void MovePlayer(int player[], int direction);                                // Control Player Movement
+int MovePlayer(int player[], int direction);                                 // Control Player Movement
 bool isInPlayerArea(int Position[]);
 
 void SpawnLaser(float Lasers[][3], const int player[], Sprite LaserSprites[], Texture &LaserTexture);                                      // Spawn a single bullet
@@ -98,7 +98,7 @@ void DestroyMushroom(int Position[], int **&Mushrooms_Ptr, int &MushroomsCount, 
 int GetMushroom(int Position[], int **&Mushrooms_Ptr, int &MushroomsCount);
 void PurgeMushrooms(int **&Mushrooms_Ptr, int &MushroomsCount);
 
-void HandlePlayer(int player[2]); // Handle KeyBoard Inputs
+int HandlePlayer(int player[2]); // Handle KeyBoard Inputs
 
 bool UpdateGrid(int Grid_x, int Grid_y, int object);
 bool UpdateGrid(int Grid_x, int Grid_y, int object, int &collidedObject, int Direction);
@@ -106,7 +106,7 @@ bool UpdateGrid(int Grid_x, int Grid_y, int object, int &collidedObject, int Dir
 void GenerateCentipede(int ***&centepede_ptr, int size, int Position[], int Direction, int T_Direction, int &centepedes_count, int **PreviousBody = nullptr, bool SplitDown = false);
 void DeleteCentepede(int ***&centepede_ptr, int n, int &centepedes_count);
 void RenderCentepedes(RenderWindow &Window, Texture CentepedeTexture_HEAD, Texture CentepedeTexture_BODY, int ***&centepede_ptr, int centepedes_count);
-int MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int **&Mushrooms_Ptr, int &MushroomsCount, char C_Score[]);
+int MoveCentepedes(int ***&centepede_ptr, int &centepedes_count, int **&Mushrooms_Ptr, int &MushroomsCount, char C_Score[], Clock &CentipedeGenerationClock);
 int GetCentipede(int ***&centipedeptr, int centipedes_count, int Position[]);
 int GetCentipedeBodyIndex(int ***&centipedeptr, int centipede_n, int Position[]);
 
@@ -301,9 +301,9 @@ int main()
                         window.close();
                         State = State_Exit;
                     }
-                    if (e.key.code == Keyboard::P)
+                    if (e.key.code == Keyboard::Escape)
                     {
-                        State = State_GameOver;
+                        State = State_Menu;
                         break;
                     }
                 }
@@ -316,12 +316,16 @@ int main()
                 */
                 if (PlayerMovementClock.getElapsedTime().asMilliseconds() > 100)
                 {
-                    HandlePlayer(Player);
+                    if (HandlePlayer(Player) == -1)
+                    {
+                        State = State_GameOver;
+                        break;
+                    }
                     PlayerMovementClock.restart();
                 }
                 if (CentipedeClock.getElapsedTime().asMilliseconds() > 100)
                 {
-                    if (MoveCentepedes(centepede_ptr, centepedes_count, Mushrooms_Ptr, MushroomsCount, C_Score) == -1)
+                    if (MoveCentepedes(centepede_ptr, centepedes_count, Mushrooms_Ptr, MushroomsCount, C_Score, CentipedeGenerationClock) == -1)
                     {
                         State = State_GameOver;
                         break;
@@ -346,15 +350,6 @@ int main()
                         LaserShoted = true;
                         SpawnLaser(Lasers, Player, LaserSprites, LaserTexture);
                         LaserClock.restart();
-                    }
-                }
-                if (CentipedeGenerationClock.getElapsedTime().asMilliseconds() > 5000)
-                {
-                    if (isInPlayerArea(Position))
-                    {
-                        int Position[2] = {gameColumns, gameRows - ((rand() % 5) + 1)};
-                        GenerateCentipede(centepede_ptr, 1, Position, LEFT, DOWN, centepedes_count);
-                        CentipedeGenerationClock.restart();
                     }
                 }
 
@@ -487,16 +482,17 @@ int main()
     }
     return 0;
 }
-void HandlePlayer(int player[2])
+int HandlePlayer(int player[2])
 {
     if (Keyboard::isKeyPressed(Keyboard::Up))
-        MovePlayer(player, UP);
+        return MovePlayer(player, UP);
     else if (Keyboard::isKeyPressed(Keyboard::Down))
-        MovePlayer(player, DOWN);
+        return MovePlayer(player, DOWN);
     else if (Keyboard::isKeyPressed(Keyboard::Left))
-        MovePlayer(player, LEFT);
+        return MovePlayer(player, LEFT);
     else if (Keyboard::isKeyPressed(Keyboard::Right))
-        MovePlayer(player, RIGHT);
+        return MovePlayer(player, RIGHT);
+    return 0;
 }
 bool isInPlayerArea(int Position[])
 {
@@ -504,59 +500,43 @@ bool isInPlayerArea(int Position[])
         return true;
     return false;
 }
-void MovePlayer(int player[], int direction)
+int MovePlayer(int player[], int direction)
 {
+    int collided_object = ONone;
     PlayMovePlayerSound();
-
-    UpdateGrid(player[x], player[y], ONone); // Modify this code Whole function
+    UpdateGrid(player[x], player[y], ONone);
     switch (direction)
     {
     case UP:
         if (player[y] >= (gameRows - 4))
         {
-            if (gameGrid[player[y] - 1][player[x]] != 0)
-            {
-                cout << "Collided" << endl;
-            }
-            else
-                player[y] -= 1;
+            player[y] -= 1;
         }
         break;
     case DOWN:
         if (player[y] <= (gameRows - 2))
         {
-            if (gameGrid[player[y] + 1][player[x]] != 0)
-            {
-                cout << "Collided" << endl;
-            }
-            else
-                player[y] += 1;
+            player[y] += 1;
         }
         break;
     case LEFT:
         if (player[x] >= 1)
         {
-            if (gameGrid[player[y]][player[x] - 1] != 0)
-            {
-                cout << "Collided" << endl;
-            }
-            else
-                player[x] -= 1;
+            player[x] -= 1;
         }
         break;
     case RIGHT:
         if (player[x] <= (gameColumns - 2))
         {
-            if (gameGrid[player[y]][player[x] + 1] != 0)
-            {
-                cout << "Collided" << endl;
-            }
-            else
-                player[x] += 1;
+            player[x] += 1;
         }
         break;
     }
-    UpdateGrid(player[x], player[y], OPlayer);
+    if (UpdateGrid(player[x], player[y], OPlayer))
+    {
+        return -1;
+    }
+    return 0;
 }
 void RenderPlayer(RenderWindow &window, int player[], Sprite &playersprite)
 {
@@ -962,7 +942,7 @@ void RenderCentepedes(RenderWindow &Window, Texture CentepedeTexture_HEAD, Textu
         }
     }
 }
-int MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int **&Mushrooms_Ptr, int &MushroomsCount, char C_Score[])
+int MoveCentepedes(int ***&centepede_ptr, int &centepedes_count, int **&Mushrooms_Ptr, int &MushroomsCount, char C_Score[], Clock &CentipedeGenerationClock)
 {
     const int step_size = 1;
     for (int i = 0; i < centepedes_count; i++)
@@ -990,6 +970,15 @@ int MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int **&Mushrooms
             centepede_ptr[i][j][CDirection] = centepede_ptr[i][j - 1][CDirection];
         }
         bool Collision = (PreviousObject == ODMushroom || PreviousObject == OPlayer || NextObject == OPMushroom || PreviousObject == OPMushroom);
+        if (isInPlayerArea(Position))
+        {
+            if (CentipedeGenerationClock.getElapsedTime().asSeconds() > 5)
+            {
+                int Position[2] = {gameColumns, gameRows - ((rand() % 5) + 1)};
+                GenerateCentipede(centepede_ptr, 1, Position, LEFT, DOWN, centepedes_count);
+                CentipedeGenerationClock.restart();
+            }
+        }
         if (Collision || UpdateGrid(Position[x], Position[y], OCentepede, collided_object, P_direction))
         {
             if (collided_object != OCentepede)
@@ -1005,14 +994,25 @@ int MoveCentepedes(int ***&centepede_ptr, int centepedes_count, int **&Mushrooms
                 }
                 centepede_ptr[i][0][CDirection] = ((centepede_ptr[i][0][CDirection]) == RIGHT) ? (LEFT) : (RIGHT);
 
-                if (Position[y] == (gameRows - 1))
+                if (isInPlayerArea(Position))
+                {
+                    if (Position[y] == (gameRows - 1))
+                    {
+                        centepede_ptr[i][0][TDirection] = UP;
+                    }
+                }
+                else
+                {
+                    centepede_ptr[i][0][TDirection] = DOWN;
+                }
+                /* if (Position[y] == (gameRows - 1))
                 {
                     centepede_ptr[i][0][TDirection] = UP;
                 }
                 else if (Position[y] < (gameRows - 4))
                 {
                     centepede_ptr[i][0][TDirection] = DOWN;
-                }
+                } */
                 if (centepede_ptr[i][0][TDirection] == DOWN)
                     centepede_ptr[i][0][y] += step_size;
                 else
